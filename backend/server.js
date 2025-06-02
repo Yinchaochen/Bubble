@@ -40,7 +40,7 @@ async function updateNews() {
     for (const lang of langList) {
       try {
         const summarized = await summarize(rawArticles, lang);
-        cachedNews[lang] = summarized; // ✅ 修复：使用正确的变量名
+        cachedNews[lang] = summarized; // 
       } catch (err) {
         console.error(`OpenAI summarize error [${lang}]:`, err.message);
         cachedNews[lang] = rawArticles.map(article => ({
@@ -67,7 +67,9 @@ app.get('/api/news', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`🌍 Check your deployment platform for the actual URL`);
+  
   updateNews();
-  setInterval(updateNews, 1000 * 60 * 5); // 每 5 分钟刷新新闻
+  setInterval(updateNews, 1000 * 60 * 5);
 });
