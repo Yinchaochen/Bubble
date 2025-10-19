@@ -3,6 +3,11 @@
 *(English | Deutsch | 中文)*
 
 ---
+##  Demo
+
+[ Website: Bubble](https://bubble-psi-three.vercel.app)
+
+
 
 ## Overview / 项目简介 / Projektübersicht
 
@@ -123,11 +128,14 @@ Description: Manually trigger cache refresh (admin use).
 ## UI Framework / 前端设计说明 / UI-Framework
 
 English:
-MUI (Material-UI v7) is chosen for its stable component system, responsive layout, and full support for TypeScript and React 19.
-lucide-react provides lightweight modern icons.
+The frontend uses MUI v7, with lucide-react providing a clean and modern icon system.
+Initially, I planned to use Tailwind CSS, but due to a compatibility issue with Tailwind CSS, I eventually decided to abandon it and switch to MUI instead.
+I believe that using MUI is a safer choice for me as a beginner.
 
 Deutsch:
-Verwendet MUI für konsistente UI-Komponenten und lucide-react für Icons.
+Das Frontend verwendet MUI v7, und lucide-react sorgt für ein schlichtes und modernes Iconsystem.
+Ursprünglich hatte ich vor, Tailwind CSS zu verwenden, aber aufgrund eines Kompatibilitätsproblems mit Tailwind CSS habe ich mich schließlich entschieden, darauf zu verzichten und stattdessen MUI zu verwenden.
+Ich denke, dass die Verwendung von MUI für mich als Anfänger die sicherere Wahl ist.
 
 中文：
 前端采用 MUI v7，
@@ -144,10 +152,16 @@ summarize.js 使用 OpenAI 对新闻生成摘要，失败时使用 Google 翻译
 server.js 使用 helmet、cors、rate-limit 保障安全。
 
 Deutsch:
-Der Backend-Server ruft RSS-Feeds ab, fasst sie mit OpenAI zusammen und cached die Ergebnisse. Ein Cron-Job aktualisiert die Daten regelmäßig.
+fetchNews.js ruft die BBC-RSS-Feeds mit axios ab, analysiert sie mit xml2js und extrahiert Titel, Beschreibungen und Zeitstempel.
+summarize.js verwendet OpenAI, um Nachrichten zusammenzufassen, und nutzt Google Translate als Ausweichlösung, falls die Zusammenfassung fehlschlägt.
+Eine geplante Aufgabe mit node-cron aktualisiert alle zwei Stunden den Cache.
+server.js sorgt mit helmet, cors und rate-limit für Sicherheit.
 
 English:
-Backend fetches and parses BBC RSS, summarizes articles with OpenAI, falls back to Google translation, caches per language, and updates automatically via cron.
+fetchNews.js fetches BBC RSS feeds via axios, parses them using xml2js, and extracts titles, descriptions, and timestamps.
+summarize.js uses OpenAI to generate news summaries, with Google Translate as a fallback when the summarization fails.
+A scheduled task using node-cron updates the cache every two hours.
+server.js ensures security with helmet, cors, and rate-limit.
 
 ## Environment Variables / 环境变量 / Umgebungsvariablen
 Variable	              Description
