@@ -24,6 +24,7 @@ News-AI 是一个多语言新闻摘要平台，自动抓取 BBC 新闻，调用 
 ---
 
 ## Project Structure / 项目结构 / Projektstruktur
+```text
 news-ai-app/
 │
 ├── frontend/ # React + TypeScript + MUI
@@ -43,6 +44,7 @@ news-ai-app/
 │ └── .env.example # Example environment variables file
 │
 └── README.md # Project documentation (this file)
+```
 
 ## Tech Stack / 技术栈 / Technologiestack
 
