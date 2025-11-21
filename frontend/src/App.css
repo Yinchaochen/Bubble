@@ -1,6 +1,13 @@
+body {
+  margin: 0;
+  background: url('/background.jpg') no-repeat center center fixed;
+  background-size: cover;
+}
+
 .App {
   text-align: center;
 }
+
 
 .App-logo {
   height: 40vmin;
@@ -14,7 +21,7 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: transparent;
   min-height: 100vh;
   display: flex;
   flex-direction: column;

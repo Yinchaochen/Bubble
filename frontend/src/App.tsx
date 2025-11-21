@@ -326,7 +326,12 @@ const App: React.FC = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%)'
+      backgroundImage: 'url(/background.jpg)',
+      backgroundSize: 'cover',
+      backgroundAttachment: 'fixed',
+      backgroundPosition: 'center',
+      bgcolor: 'background.default',
+      color: 'text.primary'
     }}>
       <AppBar position="static" sx={{ 
         bgcolor: 'background.paper',
