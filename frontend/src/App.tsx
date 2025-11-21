@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Globe, ExternalLink, ChevronDown, ChevronUp, AlertCircle, Download } from 'lucide-react';
 import axios from 'axios';
 import {
@@ -272,7 +272,9 @@ const App: React.FC = () => {
 
   const t = translations[language];
 
-  const loadNews = async (showLoading = true) => {
+
+  //21.11.2025 -- useCallback 包裹 loadNews 函数，避免不必要的重新创建
+  const loadNews = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     setError(null);
 
@@ -296,21 +298,21 @@ const App: React.FC = () => {
     } finally {
       if (showLoading) setLoading(false);
     }
-  };
+  },[language]);
 
   useEffect(() => {
     loadNews();
     setExpandedCard(null);
-  }, [language]);
+  }, [loadNews]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       loadNews(false);
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [language]);
+  }, [loadNews]);
 
-  const handleCardToggle = (cardId: number) => {
+  const handleCardToggle = (cardId : number) => {
     setExpandedCard(expandedCard === cardId ? null : cardId);
   };
 
