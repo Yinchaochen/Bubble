@@ -40,13 +40,19 @@ async function updateNews() {
     for (const lang of langList) {
       try {
         const summarized = await summarize(rawArticles, lang);
-        cachedNews[lang] = summarized; // 
+        cachedNews[lang] = summarized;
       } catch (err) {
-        console.error(`OpenAI summarize error [${lang}]:`, err.message);
-        cachedNews[lang] = rawArticles.map(article => ({
-          ...article,
-          summary: `This is a mock summary. ${article.content?.slice(0, 50)}...`
-        }));
+        console.error(`summarize error [${lang}]:`, err.message);
+        // For non-English languages, do NOT store English raw articles in the cache.
+        // Leaving the cache empty causes the frontend to show a retry prompt,
+        // which is better than showing untranslated English content under a Chinese/German UI.
+        if (lang === 'en') {
+          cachedNews[lang] = rawArticles.map(article => ({
+            ...article,
+            summary: article.content?.slice(0, 150) || 'No summary available.',
+          }));
+        }
+        // de / zh: leave cachedNews[lang] unchanged (empty or previous good data)
       }
     }
 

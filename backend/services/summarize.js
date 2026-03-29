@@ -2,7 +2,7 @@ const OpenAI = require('openai');
 require('dotenv').config();
 
 const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'no-key',
   project: process.env.OPENAI_PROJECT_ID,
 });
 
@@ -34,10 +34,6 @@ async function callOpenAI(messages, maxTokens = 200) {
 }
 
 module.exports = async function summarize(articles, lang) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not found in environment');
-  }
-
   const targetLang = LANG_MAP[lang] || lang;
   const langName = lang === 'zh' ? 'Chinese' : lang === 'de' ? 'German' : 'English';
   const results = [];
