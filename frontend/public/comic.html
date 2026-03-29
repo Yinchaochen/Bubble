@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bubble — Comic Guide</title>
+  <style>
+    /* ── 全局 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a2e;
+      --yellow: #ffd93d;
+      --red: #ff6b6b;
+      --blue: #4ecdc4;
+      --purple: #a29bfe;
+      --green: #55efc4;
+      --orange: #fd9644;
+      --white: #fffdf7;
+      --panel-border: 4px solid var(--ink);
+      --shadow: 6px 6px 0 var(--ink);
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
+
+    body {
+      background: var(--white);
+      font-family: 'Comic Neue', 'Arial Rounded MT Bold', cursive;
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ── 半色调背景纹理 ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, #ddd 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── 封面 ── */
+    .cover {
+      position: relative;
+      background: var(--yellow);
+      border-bottom: 6px solid var(--ink);
+      padding: 60px 20px 40px;
+      text-align: center;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0; right: 0;
+      height: 18px;
+      background: repeating-linear-gradient(90deg, var(--ink) 0 18px, transparent 18px 36px);
+    }
+
+    .cover-badge {
+      display: inline-block;
+      background: var(--red);
+      color: #fff;
+      font-family: 'Bangers', cursive;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      padding: 4px 14px;
+      border: 3px solid var(--ink);
+      border-radius: 4px;
+      box-shadow: 3px 3px 0 var(--ink);
+      margin-bottom: 16px;
+      transform: rotate(-2deg);
+    }
+
+    .cover h1 {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(3.5rem, 12vw, 7rem);
+      letter-spacing: 4px;
+      line-height: 1;
+      text-shadow: 5px 5px 0 var(--ink);
+      color: var(--ink);
+    }
+
+    .cover h1 span { color: var(--red); }
+
+    .cover-sub {
+      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-weight: 700;
+      margin-top: 10px;
+      color: var(--ink);
+    }
+
+    .cover-stars {
+      font-size: 1.8rem;
+      margin-top: 8px;
+      letter-spacing: 4px;
+    }
+
+    /* ── 章节标题条 ── */
+    .chapter {
+      position: relative;
+      z-index: 1;
+      background: var(--ink);
+      color: var(--yellow);
+      font-family: 'Bangers', cursive;
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      letter-spacing: 3px;
+      padding: 12px 32px;
+      text-align: center;
+      border-top: 4px solid var(--yellow);
+      border-bottom: 4px solid var(--yellow);
+    }
+
+    /* ── 格子容器 ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: grid;
+      gap: 20px;
+    }
+
+    /* 列布局变体 */
+    .grid-2   { grid-template-columns: 1fr 1fr; }
+    .grid-3   { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-3-1 { grid-template-columns: 2fr 1fr; }
+    .grid-1-3 { grid-template-columns: 1fr 2fr; }
+
+    @media (max-width: 640px) {
+      .grid-2, .grid-3, .grid-3-1, .grid-1-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── 漫画格子 (Panel) ── */
+    .panel {
+      border: var(--panel-border);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      background: #fff;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 角标 */
+    .panel-num {
+      position: absolute;
+      top: 8px; left: 10px;
+      font-family: 'Bangers', cursive;
+      font-size: 1rem;
+      color: #888;
+    }
+
+    /* 背景色变体 */
+    .panel-yellow  { background: #fffbe6; }
+    .panel-blue    { background: #e0faf8; }
+    .panel-red     { background: #fff0f0; }
+    .panel-purple  { background: #f0efff; }
+    .panel-green   { background: #e8fdf5; }
+    .panel-dark    { background: var(--ink); color: #fff; }
+    .panel-orange  { background: #fff5e6; }
+
+    /* ── 对话气泡 ── */
+    .bubble {
+      position: relative;
+      background: #fff;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      padding: 10px 16px;
+      margin: 10px 4px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      display: inline-block;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+
+    /* 气泡尾巴：左下 */
+    .bubble-left::after {
+      content: '';
+      position: absolute;
+      bottom: -14px; left: 18px;
+      border: 8px solid transparent;
+      border-top-color: var(--ink);
+    }
+    .bubble-left::before {
+      content: '';
+      position: absolute;
+      bottom: -10px; left: 20px;
+      border: 6px solid transparent;
+      border-top-color: #fff;
+      z-index: 1;
+    }
+
+    /* 气泡尾巴：右下 */
+    .bubble-right::after {
+      content: '';
+      position: absolute;
+      bottom: -14px; right: 18px;
+      border: 8px solid transparent;
+      border-top-color: var(--ink);
+    }
+    .bubble-right::before {
+      content: '';
+      position: absolute;
+      bottom: -10px; right: 20px;
+      border: 6px solid transparent;
+      border-top-color: #fff;
+      z-index: 1;
+    }
+
+    /* 思考气泡 */
+    .bubble-think {
+      border-radius: 50px;
+      border-style: dashed;
+    }
+    .bubble-think::after {
+      content: '•••';
+      position: absolute;
+      bottom: -22px; left: 16px;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: var(--ink);
+    }
+
+    /* 喊话气泡（锯齿） */
+    .bubble-shout {
+      background: var(--yellow);
+      clip-path: polygon(5% 0%,95% 0%,100% 5%,100% 95%,95% 100%,5% 100%,0% 95%,0% 5%);
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+      font-family: 'Bangers', cursive;
+      letter-spacing: 1px;
+      font-size: 1.1rem;
+    }
+
+    /* 彩色气泡 */
+    .bubble-blue   { background: var(--blue);   color: var(--ink); }
+    .bubble-red    { background: var(--red);    color: #fff; }
+    .bubble-purple { background: var(--purple); color: #fff; }
+    .bubble-green  { background: var(--green);  color: var(--ink); }
+
+    /* ── 拟声词 ── */
+    .sfx {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(2rem, 8vw, 4rem);
+      color: var(--red);
+      text-shadow: 3px 3px 0 var(--ink);
+      display: block;
+      line-height: 1;
+      transform: rotate(-5deg);
+      margin: 8px 0;
+    }
+
+    .sfx-blue   { color: var(--blue); }
+    .sfx-purple { color: var(--purple); }
+    .sfx-green  { color: var(--green); }
+    .sfx-yellow { color: var(--yellow); text-shadow: 3px 3px 0 var(--ink); }
+    .sfx-orange { color: var(--orange); }
+
+    /* ── 角色图标 ── */
+    .char {
+      font-size: clamp(3rem, 10vw, 6rem);
+      display: block;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .char-sm { font-size: clamp(2rem, 6vw, 3.5rem); }
+
+    /* ── 标签徽章 ── */
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      margin: 3px;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
+    .tag-yellow { background: var(--yellow); }
+    .tag-blue   { background: var(--blue); }
+    .tag-red    { background: var(--red); color: #fff; }
+    .tag-purple { background: var(--purple); color: #fff; }
+    .tag-green  { background: var(--green); }
+    .tag-orange { background: var(--orange); color: #fff; }
+
+    /* ── 箭头 ── */
+    .arrow {
+      font-size: 2rem;
+      text-align: center;
+      color: var(--ink);
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── 流程步骤 ── */
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 10px 0;
+    }
+
+    .step-num {
+      min-width: 32px; height: 32px;
+      background: var(--ink);
+      color: #fff;
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 2px 2px 0 #888;
+    }
+
+    .step-text { font-size: 0.95rem; line-height: 1.6; padding-top: 4px; }
+
+    /* ── 高亮文字 ── */
+    .hl-yellow { background: var(--yellow); padding: 1px 4px; border-radius: 3px; }
+    .hl-blue   { background: var(--blue);   padding: 1px 4px; border-radius: 3px; }
+    .hl-red    { background: var(--red);    padding: 1px 4px; border-radius: 3px; color: #fff; }
+    .hl-purple { background: var(--purple); padding: 1px 4px; border-radius: 3px; color: #fff; }
+    .hl-green  { background: var(--green);  padding: 1px 4px; border-radius: 3px; }
+
+    /* ── 代码块 ── */
+    .code-box {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border: 3px solid var(--ink);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      box-shadow: 4px 4px 0 var(--ink);
+      overflow-x: auto;
+    }
+
+    .code-box .kw  { color: #cba6f7; }
+    .code-box .str { color: #a6e3a1; }
+    .code-box .fn  { color: #89dceb; }
+    .code-box .cm  { color: #6c7086; }
+    .code-box .num { color: #fab387; }
+
+    /* ── 地图/流程图 ── */
+    .flow-map {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 0;
+    }
+
+    .flow-node {
+      border: 3px solid var(--ink);
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      box-shadow: 4px 4px 0 var(--ink);
+      min-width: 80px;
+    }
+
+    .flow-arrow {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    /* ── 信息卡 ── */
+    .info-card {
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      padding: 12px 16px;
+      background: #fff;
+      box-shadow: 4px 4px 0 var(--ink);
+      margin: 8px 0;
+    }
+
+    .info-card-title {
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    /* ── 语言标志行 ── */
+    .lang-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+      justify-content: center;
+    }
+
+    .lang-pill {
+      border: 3px solid var(--ink);
+      border-radius: 30px;
+      padding: 8px 18px;
+      font-weight: 700;
+      font-size: 1rem;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+
+    /* ── 页脚 ── */
+    .footer {
+      position: relative;
+      z-index: 1;
+      background: var(--ink);
+      color: var(--yellow);
+      text-align: center;
+      padding: 24px;
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      border-top: 6px solid var(--yellow);
+    }
+
+    /* ── 全宽面板 ── */
+    .panel-full { grid-column: 1 / -1; }
+
+    /* ── 段落文字 ── */
+    p { line-height: 1.6; }
+
+    h2 {
+      font-family: 'Bangers', cursive;
+      font-size: 1.6rem;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-family: 'Bangers', cursive;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    /* ── 动画 ── */
+    @keyframes wiggle {
+      0%,100% { transform: rotate(-3deg); }
+      50%      { transform: rotate(3deg); }
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 4px 4px 0 var(--ink); }
+      50%      { box-shadow: 8px 8px 0 var(--ink); }
+    }
+
+    .anim-wiggle  { animation: wiggle 2s infinite; display: inline-block; }
+    .anim-bounce  { animation: bounce 1.5s infinite; display: inline-block; }
+    .anim-pulse   { animation: pulse-border 2s infinite; }
+
+    /* ── 对白区块 ── */
+    .dialogue {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      margin: 10px 0;
+    }
+    .dialogue.right { flex-direction: row-reverse; }
+    .dialogue-char { font-size: 2.5rem; flex-shrink: 0; }
+    .dialogue-text  { flex: 1; }
+
+    /* ── 警告框 ── */
+    .callout {
+      border: 3px solid var(--ink);
+      border-left: 7px solid var(--red);
+      border-radius: 6px;
+      padding: 12px 16px;
+      background: #fff5f5;
+      box-shadow: 4px 4px 0 var(--ink);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .callout-tip {
+      border-left-color: var(--blue);
+      background: #f0fbfa;
+    }
+
+    /* ── 进度条 ── */
+    .progress-bar {
+      height: 18px;
+      background: #eee;
+      border: 2px solid var(--ink);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      border-radius: 10px;
+      transition: width 1s;
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     Cover
+══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-badge">TECH COMIC GUIDE VOL.1</div>
+  <h1>BUBBLE<br><span>泡泡</span></h1>
+  <p class="cover-sub">An AI-powered app for world news</p>
+  <p class="cover-stars">★★★★★</p>
+  <p style="margin-top:16px; font-size:0.9rem; color:#555;">By: Yinchao Chen / Berlin, Germany</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 1: What is this app?
+══════════════════════════════════════════ -->
+<div class="chapter">📰 Chapter 1 — What is this?</div>
+
+<div class="page grid-2">
+
+  <!-- Panel 1: Problem intro -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">①</span>
+    <span class="char">🧑‍💻</span>
+    <div class="bubble bubble-left" style="margin-top:14px;">
+      So much happens in the world every day…<br>
+      How do I stay on top<br>
+      of the news?!
+    </div>
+    <div class="bubble bubble-think" style="margin-top:24px; font-size:0.85rem;">
+      I wish someone could summarize it all for me…
+    </div>
+  </div>
+
+  <!-- Panel 2: Bubble enters -->
+  <div class="panel panel-blue">
+    <span class="panel-num">②</span>
+    <span class="sfx sfx-blue anim-bounce" style="font-size:3rem;">ENTER!</span>
+    <span class="char anim-wiggle">🫧</span>
+    <div class="bubble bubble-right bubble-blue">
+      I'm <strong>BUBBLE</strong>!<br>
+      I'm here to help! ✨
+    </div>
+  </div>
+
+  <!-- Panel 3: Three core features -->
+  <div class="panel panel-full">
+    <span class="panel-num">③</span>
+    <h2 style="text-align:center; color:var(--red);">What can BUBBLE do?</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-top:14px;">
+      <div class="info-card" style="background:#fffbe6;">
+        <div class="info-card-title">🌍 Fetch Global News</div>
+        <p style="font-size:0.9rem;">Pulls the latest world headlines from <strong>BBC News</strong> in real time, auto-refreshing every 5 minutes.</p>
+      </div>
+      <div class="info-card" style="background:#e0faf8;">
+        <div class="info-card-title">🤖 AI Smart Summary</div>
+        <p style="font-size:0.9rem;">Uses <strong>ChatGPT (GPT-3.5)</strong> to condense long articles into a concise, readable summary.</p>
+      </div>
+      <div class="info-card" style="background:#f0efff;">
+        <div class="info-card-title">🗣️ Three-Language Switch</div>
+        <p style="font-size:0.9rem;">Summaries are available in <strong>English · Deutsch · 中文</strong>, switchable with one click.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 2: How it works
+══════════════════════════════════════════ -->
+<div class="chapter">⚙️ Chapter 2 — What happens behind the scenes?</div>
+
+<div class="page">
+
+  <!-- Full flow map -->
+  <div class="panel panel-dark panel-full anim-pulse">
+    <h2 style="color:var(--yellow); text-align:center; margin-bottom:16px;">🗺️ Data Journey Map</h2>
+    <div class="flow-map">
+      <div class="flow-node" style="background:var(--red);color:#fff;">
+        📡<br>BBC<br>RSS
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:var(--orange);color:#fff;">
+        🔧<br>Backend<br>Server
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:var(--purple);color:#fff;">
+        🤖<br>OpenAI<br>GPT
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:var(--green);color:var(--ink);">
+        🗄️<br>Memory<br>Cache
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:var(--blue);color:var(--ink);">
+        🖥️<br>Frontend<br>React
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:var(--yellow);color:var(--ink);">
+        👤<br>You
+      </div>
+    </div>
+    <p style="text-align:center; color:#aaa; font-size:0.85rem; margin-top:12px;">Fully automatic — open the page and results appear instantly</p>
+  </div>
+
+</div>
+
+<!-- 分步骤详解 -->
+<div class="page grid-2">
+
+  <!-- Step 1 -->
+  <div class="panel panel-red">
+    <span class="panel-num">①</span>
+    <span class="sfx" style="font-size:2rem;">STEP 1</span>
+    <h3>📡 Fetch BBC RSS</h3>
+    <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">📰</span>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">The backend automatically visits the BBC News RSS feed every <span class="hl-red">5 minutes</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">RSS is an XML-format "news feed" containing titles, links, and descriptions</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Extracts the latest <span class="hl-red">5</span> articles</div>
+    </div>
+    <div class="code-box" style="margin-top:12px; font-size:0.75rem;">
+      <span class="kw">const</span> rssUrl = <span class="str">'https://feeds.bbci.co.uk/news/world/rss.xml'</span>;<br>
+      <span class="kw">const</span> items = result.rss.channel.item;<br>
+      <span class="kw">return</span> items.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">5</span>); <span class="cm">// only take first 5</span>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="panel panel-purple">
+    <span class="panel-num">②</span>
+    <span class="sfx sfx-purple" style="font-size:2rem;">STEP 2</span>
+    <h3>🤖 OpenAI Summary + Translation</h3>
+    <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">🧠</span>
+    <div class="dialogue">
+      <span class="dialogue-char">🧑‍💻</span>
+      <div class="dialogue-text">
+        <div class="bubble bubble-left" style="font-size:0.82rem;">
+          GPT, please summarize<br>this article in Chinese!
+        </div>
+      </div>
+    </div>
+    <div class="dialogue right" style="margin-top:16px;">
+      <span class="dialogue-char">🤖</span>
+      <div class="dialogue-text">
+        <div class="bubble bubble-right bubble-purple" style="font-size:0.82rem;">
+          Sure! This article is about…<br>
+          <em>(Summary in under 200 tokens)</em>
+        </div>
+      </div>
+    </div>
+    <div class="code-box" style="margin-top:10px; font-size:0.75rem;">
+      model: <span class="str">'gpt-3.5-turbo'</span>,<br>
+      messages: [<br>
+      &nbsp;{ role: <span class="str">'system'</span>, content: <span class="str">'You are a news summary assistant'</span> },<br>
+      &nbsp;{ role: <span class="str">'user'</span>, content: prompt }<br>
+      ],<br>
+      max_tokens: <span class="num">200</span>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="panel panel-green">
+    <span class="panel-num">③</span>
+    <span class="sfx sfx-green" style="font-size:2rem;">STEP 3</span>
+    <h3>🗄️ In-Memory Cache</h3>
+    <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">💾</span>
+    <p style="font-size:0.9rem; margin-bottom:12px;">Once all three language summaries are generated, they're stored in server memory — no repeated OpenAI calls (saves cost + speeds up responses).</p>
+    <div class="code-box" style="font-size:0.75rem;">
+      <span class="kw">let</span> cachedNews = {};<br><br>
+      cachedNews[<span class="str">'en'</span>] = [...EN summaries];<br>
+      cachedNews[<span class="str">'de'</span>] = [...DE summaries];<br>
+      cachedNews[<span class="str">'zh'</span>] = [...ZH summaries];
+    </div>
+    <div class="callout callout-tip" style="margin-top:12px;">
+      💡 Like a restaurant with pre-made meals — guests get served instantly, no waiting for cooking!
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="panel panel-blue">
+    <span class="panel-num">④</span>
+    <span class="sfx sfx-blue" style="font-size:2rem;">STEP 4</span>
+    <h3>🖥️ Frontend Display</h3>
+    <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">🎨</span>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">React sends a request: <code style="background:#eee;padding:1px 4px;border-radius:3px;">GET /api/news?lang=zh</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Receives JSON data and renders it as a card list</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Click a card to expand the summary; click the button to open the original article</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Silent refresh every <span class="hl-blue">5 minutes</span> without interrupting reading</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 3: Fallback plan
+══════════════════════════════════════════ -->
+<div class="chapter">🆘 Chapter 3 — What if AI goes down?</div>
+
+<div class="page grid-3">
+
+  <!-- Main character -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">①</span>
+    <span class="char">🤖</span>
+    <span class="sfx" style="font-size:2rem; color:var(--red);">CRASH!</span>
+    <div class="bubble bubble-left" style="background:#ffe0e0;">
+      OpenAI timed out…<br>
+      What do we do now?! 😱
+    </div>
+  </div>
+
+  <!-- Fallback A -->
+  <div class="panel panel-blue">
+    <span class="panel-num">②</span>
+    <h3 style="color:var(--blue);">Fallback A</h3>
+    <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">🌐</span>
+    <div class="bubble bubble-blue">
+      <strong>Google Translate</strong> steps in!<br>
+      Switching automatically
+    </div>
+    <p style="font-size:0.85rem; margin-top:12px;">OpenAI fails → automatically switches to <span class="hl-blue">Google Translate API</span> for title and content</p>
+  </div>
+
+  <!-- Fallback B -->
+  <div class="panel panel-orange">
+    <span class="panel-num">③</span>
+    <h3 style="color:var(--orange);">Fallback B</h3>
+    <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">🏷️</span>
+    <div class="bubble bubble-left">
+      Even Google fails?
+    </div>
+    <p style="font-size:0.85rem; margin-top:12px;">Adds a language tag and returns the original English content:</p>
+    <div class="code-box" style="margin-top:8px; font-size:0.75rem;">
+      <span class="str">'[ZH] Translation unavailable'</span><br>+ first 150 chars of original...
+    </div>
+  </div>
+
+  <!-- Triple safety net -->
+  <div class="panel panel-full">
+    <span class="panel-num">④</span>
+    <h2 style="text-align:center;">🛡️ Triple Fallback Safety Net</h2>
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px;">
+      <div class="flow-node" style="background:var(--purple);color:#fff;">
+        🤖 OpenAI<br><small>Primary</small>
+      </div>
+      <div class="flow-arrow">→ fail →</div>
+      <div class="flow-node" style="background:var(--blue);color:var(--ink);">
+        🌐 Google<br><small>Backup</small>
+      </div>
+      <div class="flow-arrow">→ fail →</div>
+      <div class="flow-node" style="background:var(--orange);color:#fff;">
+        🏷️ Tag<br><small>Last resort</small>
+      </div>
+    </div>
+    <div class="callout callout-tip" style="margin-top:16px; text-align:center;">
+      💡 No matter what happens, the page always shows content — no blank screen errors!
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 4: Multilingual system
+══════════════════════════════════════════ -->
+<div class="chapter">🗣️ Chapter 4 — The Three-Language Magic</div>
+
+<div class="page grid-2">
+
+  <!-- Language switch demo -->
+  <div class="panel panel-purple">
+    <span class="panel-num">①</span>
+    <span class="sfx sfx-purple" style="font-size:2.2rem;">SWITCH!</span>
+    <h3>One Story, Three Languages</h3>
+    <div class="info-card" style="background:#fff5f5; margin-top:10px;">
+      <div class="tag tag-red">EN</div>
+      <p style="font-size:0.85rem; margin-top:4px;">World leaders meet to discuss climate policy...</p>
+    </div>
+    <div class="info-card" style="background:#f0efff;">
+      <div class="tag tag-purple">DE</div>
+      <p style="font-size:0.85rem; margin-top:4px;">Weltführer treffen sich um die Klimapolitik zu besprechen...</p>
+    </div>
+    <div class="info-card" style="background:#e0faf8;">
+      <div class="tag tag-blue">ZH</div>
+      <p style="font-size:0.85rem; margin-top:4px;">世界领导人就气候政策展开会议讨论...</p>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">②</span>
+    <h3>🔧 How It Works</h3>
+    <div class="step" style="margin-top:12px;">
+      <div class="step-num">1</div>
+      <div class="step-text">On server start, generates <strong>all three</strong> summaries (en / de / zh) simultaneously</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">All stored in cache:<br><code style="background:#eee;padding:1px 4px;">cachedNews['zh']</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">You switch language → frontend sends <code style="background:#eee;padding:1px 4px;">?lang=zh</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Backend fetches matching language from cache — <span class="hl-yellow">millisecond response</span></div>
+    </div>
+  </div>
+
+  <!-- Language flags -->
+  <div class="panel panel-full">
+    <span class="panel-num">③</span>
+    <h2 style="text-align:center;">Supported Languages</h2>
+    <div class="lang-row" style="margin-top:14px;">
+      <div class="lang-pill" style="background:#fff0f0;">🇬🇧 English</div>
+      <div class="lang-pill" style="background:#f0efff;">🇩🇪 Deutsch</div>
+      <div class="lang-pill" style="background:#e0faf8;">🇨🇳 中文</div>
+    </div>
+    <div class="dialogue" style="margin-top:20px;">
+      <span class="dialogue-char">👤</span>
+      <div class="dialogue-text">
+        <div class="bubble bubble-left bubble-shout">Why these three languages?</div>
+      </div>
+    </div>
+    <div class="dialogue right" style="margin-top:20px;">
+      <span class="dialogue-char">🫧</span>
+      <div class="dialogue-text">
+        <div class="bubble bubble-right bubble-blue">
+          Yinchao lives in Berlin, Germany,<br>
+          native Chinese speaker, works in English &amp; German —<br>
+          so these three it is! 🎯
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 5: Tech stack
+══════════════════════════════════════════ -->
+<div class="chapter">🛠️ Chapter 5 — What tech was used?</div>
+
+<div class="page grid-3">
+
+  <!-- Frontend -->
+  <div class="panel panel-blue">
+    <span class="panel-num">①</span>
+    <h2 style="color:var(--blue);">Frontend</h2>
+    <p style="font-size:0.8rem; color:#888; margin-bottom:10px;">What the user sees</p>
+    <div class="step">
+      <div class="step-num" style="background:var(--blue);">⚛</div>
+      <div class="step-text"><strong>React 19</strong><br>Build interactive UI</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--blue);">TS</div>
+      <div class="step-text"><strong>TypeScript</strong><br>Type safety</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--blue);">M</div>
+      <div class="step-text"><strong>MUI v7</strong><br>UI component library</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--blue);">Ax</div>
+      <div class="step-text"><strong>Axios</strong><br>HTTP requests</div>
+    </div>
+  </div>
+
+  <!-- Backend -->
+  <div class="panel panel-orange">
+    <span class="panel-num">②</span>
+    <h2 style="color:var(--orange);">Backend</h2>
+    <p style="font-size:0.8rem; color:#888; margin-bottom:10px;">Server-side logic</p>
+    <div class="step">
+      <div class="step-num" style="background:var(--orange);">N</div>
+      <div class="step-text"><strong>Node.js</strong><br>Runtime environment</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--orange);">Ex</div>
+      <div class="step-text"><strong>Express 5</strong><br>Web framework</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--orange);">Cr</div>
+      <div class="step-text"><strong>node-cron</strong><br>Scheduled tasks</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--orange);">X</div>
+      <div class="step-text"><strong>xml2js</strong><br>RSS parsing</div>
+    </div>
+  </div>
+
+  <!-- AI & Deployment -->
+  <div class="panel panel-purple">
+    <span class="panel-num">③</span>
+    <h2 style="color:var(--purple);">AI &amp; Deployment</h2>
+    <p style="font-size:0.8rem; color:#888; margin-bottom:10px;">AI core &amp; hosting</p>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple);">AI</div>
+      <div class="step-text"><strong>OpenAI GPT-3.5</strong><br>Summary + translation</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple);">G</div>
+      <div class="step-text"><strong>Google Translate</strong><br>Backup translation</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple);">V</div>
+      <div class="step-text"><strong>Vercel</strong><br>Frontend hosting</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple);">R</div>
+      <div class="step-text"><strong>Render</strong><br>Backend hosting</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 6: Security & Performance
+══════════════════════════════════════════ -->
+<div class="chapter">🔒 Chapter 6 — Security &amp; Performance</div>
+
+<div class="page grid-2">
+
+  <div class="panel panel-red">
+    <span class="panel-num">①</span>
+    <span class="sfx" style="font-size:2rem; color:var(--red);">PROTECTED!</span>
+    <h3>🛡️ Security Measures</h3>
+    <div class="step" style="margin-top:12px;">
+      <div class="step-num" style="background:var(--red);">1</div>
+      <div class="step-text"><strong>CORS</strong>: Only whitelisted domains can reach the backend — all others are rejected</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--red);">2</div>
+      <div class="step-text"><strong>Rate Limiting</strong>: Max 100 requests per 15 minutes to prevent abuse</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--red);">3</div>
+      <div class="step-text"><strong>Helmet</strong>: Automatically adds secure HTTP headers to prevent XSS and other attacks</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--red);">4</div>
+      <div class="step-text"><strong>.env file</strong>: API keys are never hardcoded — stored as environment variables</div>
+    </div>
+  </div>
+
+  <div class="panel panel-green">
+    <span class="panel-num">②</span>
+    <span class="sfx sfx-green" style="font-size:2rem;">FAST!</span>
+    <h3>⚡ Performance</h3>
+    <div class="progress-label">Cache hit rate (ideal)</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:95%;"></div></div>
+    <div style="font-size:0.8rem; color:#888; margin-bottom:12px;">95% — most requests are served directly from cache</div>
+
+    <div class="step">
+      <div class="step-num" style="background:var(--green); color:var(--ink);">C</div>
+      <div class="step-text"><strong>In-memory cache</strong>: All three language summaries pre-generated for instant responses</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--green); color:var(--ink);">Z</div>
+      <div class="step-text"><strong>Compression</strong>: gzip HTTP responses to reduce transfer size</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--green); color:var(--ink);">⏱</div>
+      <div class="step-text"><strong>1s delay</strong>: Added between AI calls to avoid triggering OpenAI rate limits</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 7: User journey
+══════════════════════════════════════════ -->
+<div class="chapter">👤 Chapter 7 — How do you use it?</div>
+
+<div class="page">
+  <div class="panel panel-full panel-yellow">
+    <span class="panel-num">①</span>
+    <h2 style="text-align:center;">A Complete User Journey</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-top:16px;">
+
+      <div style="text-align:center;">
+        <span class="char-sm" style="display:block;">🌐</span>
+        <div class="tag tag-yellow" style="margin:6px auto; display:block; width:fit-content;">Step 1</div>
+        <p style="font-size:0.85rem; font-weight:700;">Open the site</p>
+        <p style="font-size:0.78rem;">bubble-psi-three.vercel.app</p>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div style="text-align:center;">
+        <span class="char-sm" style="display:block;">⏳</span>
+        <div class="tag tag-blue" style="margin:6px auto; display:block; width:fit-content;">Step 2</div>
+        <p style="font-size:0.85rem; font-weight:700;">Load news</p>
+        <p style="font-size:0.78rem;">Spinner shows while backend returns data</p>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div style="text-align:center;">
+        <span class="char-sm" style="display:block;">🗣️</span>
+        <div class="tag tag-purple" style="margin:6px auto; display:block; width:fit-content;">Step 3</div>
+        <p style="font-size:0.85rem; font-weight:700;">Pick a language</p>
+        <p style="font-size:0.78rem;">Click the globe icon at the top</p>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div style="text-align:center;">
+        <span class="char-sm" style="display:block;">📖</span>
+        <div class="tag tag-green" style="margin:6px auto; display:block; width:fit-content;">Step 4</div>
+        <p style="font-size:0.85rem; font-weight:700;">Click a news card</p>
+        <p style="font-size:0.78rem;">Expand to read the AI summary</p>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div style="text-align:center;">
+        <span class="char-sm" style="display:block;">🔗</span>
+        <div class="tag tag-orange" style="margin:6px auto; display:block; width:fit-content;">Step 5</div>
+        <p style="font-size:0.85rem; font-weight:700;">Read original</p>
+        <p style="font-size:0.78rem;">Click the button to open the full BBC report</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     Chapter 8: Cold Start
+══════════════════════════════════════════ -->
+<div class="chapter">🥶 Chapter 8 — Why does the site time out?</div>
+
+<div class="page grid-2">
+
+  <!-- The symptom -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">①</span>
+    <span class="sfx" style="font-size:2rem; color:var(--red);">TIMEOUT!</span>
+    <span class="char">😩</span>
+    <div class="bubble bubble-left" style="margin-top:10px;">
+      I opened the site but it just<br>
+      spins forever…<br>
+      Is it broken?!
+    </div>
+    <div class="bubble bubble-think" style="margin-top:20px; font-size:0.85rem;">
+      But if I refresh a few times<br>
+      it suddenly works fine…?
+    </div>
+  </div>
+
+  <!-- What Vercel serves -->
+  <div class="panel panel-blue">
+    <span class="panel-num">②</span>
+    <h3>🕵️ What the browser actually receives</h3>
+    <p style="font-size:0.88rem; margin:10px 0;">This site is a <span class="hl-blue">React SPA</span> — Vercel only serves a bare HTML shell:</p>
+    <div class="code-box" style="font-size:0.78rem;">
+      &lt;div id=<span class="str">"root"</span>&gt;&lt;/div&gt;<br>
+      <span class="cm">&lt;!-- page content is empty --&gt;</span><br><br>
+      <span class="cm">/* Without JS, you see: */</span><br>
+      <span class="str">"You need to enable JavaScript<br>&nbsp;to run this app."</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top:12px;">
+      💡 The entire UI is painted by JavaScript <em>after</em> the page loads — nothing is pre-rendered.
+    </div>
+  </div>
+
+  <!-- Cold start explained -->
+  <div class="panel panel-full panel-dark anim-pulse">
+    <span class="panel-num" style="color:#888;">③</span>
+    <h2 style="color:var(--yellow); text-align:center; margin-bottom:16px;">🧊 The Cold Start Problem</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+
+      <div class="info-card" style="background:#1e1e3a; border-color:#555; color:#cdd6f4;">
+        <div class="info-card-title" style="color:var(--blue);">😴 Server Asleep</div>
+        <p style="font-size:0.85rem;">No visitors for a while → Vercel <strong style="color:var(--yellow);">freezes</strong> the Serverless Function to save resources. The server is essentially off.</p>
+      </div>
+
+      <div class="info-card" style="background:#1e1e3a; border-color:#555; color:#cdd6f4;">
+        <div class="info-card-title" style="color:var(--red);">🚪 You Knock</div>
+        <p style="font-size:0.85rem;">You open the site → your request arrives at a <strong style="color:var(--yellow);">frozen</strong> server. It must boot up from scratch before it can respond.</p>
+      </div>
+
+      <div class="info-card" style="background:#1e1e3a; border-color:#555; color:#cdd6f4;">
+        <div class="info-card-title" style="color:var(--orange);">⏳ Booting…</div>
+        <p style="font-size:0.85rem;">The cold start takes <strong style="color:var(--yellow);">several seconds</strong>. Your browser shows a spinner or times out while waiting.</p>
+      </div>
+
+      <div class="info-card" style="background:#1e1e3a; border-color:#555; color:#cdd6f4;">
+        <div class="info-card-title" style="color:var(--green);">🔥 Now it's Hot</div>
+        <p style="font-size:0.85rem;">After the first load, the function stays <strong style="color:var(--green);">warm</strong> for a while. Subsequent visits feel instant — until it sleeps again.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Visual timeline -->
+  <div class="panel panel-red panel-full">
+    <span class="panel-num">④</span>
+    <h3 style="text-align:center; margin-bottom:14px;">📊 What happens on your first visit</h3>
+    <div class="flow-map">
+      <div class="flow-node" style="background:#fff0f0;">
+        👤<br>You open<br>the site
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:#e8d5ff;">
+        🧊<br>Vercel<br>wakes up
+        <br><small style="color:#888;">(cold start)</small>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:#fff5e6;">
+        ⏳<br>Backend<br>boots
+        <br><small style="color:#888;">2–10 sec</small>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:#e0faf8;">
+        📡<br>Fetches<br>BBC RSS
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:#f0efff;">
+        🤖<br>OpenAI<br>summarizes
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:#e8fdf5;">
+        ✅<br>Page<br>loads!
+      </div>
+    </div>
+    <div class="callout" style="margin-top:16px; text-align:center;">
+      ⚠️ The first visit can take <strong>10–30 seconds</strong> total. That's normal — just wait or refresh once.
+    </div>
+  </div>
+
+  <!-- Warm vs Cold comparison -->
+  <div class="panel panel-green">
+    <span class="panel-num">⑤</span>
+    <span class="sfx sfx-green" style="font-size:1.8rem;">COLD vs HOT</span>
+    <div class="info-card" style="background:#fff0f0; margin-top:10px;">
+      <div class="info-card-title">🥶 Cold Start (first visit)</div>
+      <div class="progress-label">Response time</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%; background:linear-gradient(90deg,var(--red),var(--orange));"></div></div>
+      <p style="font-size:0.82rem; margin-top:4px;">10–30 seconds — server wakes from sleep</p>
+    </div>
+    <div class="info-card" style="background:#e8fdf5; margin-top:10px;">
+      <div class="info-card-title">🔥 Warm (repeat visits)</div>
+      <div class="progress-label">Response time</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:15%; background:var(--green);"></div></div>
+      <p style="font-size:0.82rem; margin-top:4px;">&lt; 1 second — server already running</p>
+    </div>
+  </div>
+
+  <!-- Why this happens + solution -->
+  <div class="panel panel-purple">
+    <span class="panel-num">⑥</span>
+    <h3>🔧 Why Vercel does this</h3>
+    <div class="step" style="margin-top:10px;">
+      <div class="step-num" style="background:var(--purple);">1</div>
+      <div class="step-text">Vercel's free tier uses <strong>Serverless Functions</strong> — they only run when a request arrives</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple);">2</div>
+      <div class="step-text">No traffic = server shuts down = <strong>zero hosting cost</strong> while idle</div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:var(--purple);">3</div>
+      <div class="step-text">The trade-off: the <strong>first visitor</strong> after a quiet period pays the startup cost</div>
+    </div>
+    <div class="callout callout-tip" style="margin-top:14px;">
+      💡 This is expected behaviour on the free tier — not a bug in the app!
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     Epilogue
+══════════════════════════════════════════ -->
+<div class="chapter">🎬 Final Chapter — Wrap Up</div>
+
+<div class="page grid-2">
+
+  <div class="panel panel-dark">
+    <span class="panel-num" style="color:#888;">①</span>
+    <span class="sfx sfx-yellow anim-wiggle" style="font-size:2.5rem;">THE END!</span>
+    <div class="dialogue">
+      <span class="dialogue-char">🫧</span>
+      <div class="dialogue-text">
+        <div class="bubble bubble-left" style="background:var(--yellow); color:var(--ink);">
+          Now you know how I work!
+        </div>
+      </div>
+    </div>
+    <div class="dialogue right" style="margin-top:20px;">
+      <span class="dialogue-char">🧑‍💻</span>
+      <div class="dialogue-text">
+        <div class="bubble bubble-right" style="background:var(--blue); color:var(--ink);">
+          Now I get it!<br>Thanks BUBBLE! 🎉
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel panel-blue">
+    <span class="panel-num">②</span>
+    <h2>📌 In a Nutshell</h2>
+    <div class="callout callout-tip" style="margin-top:12px; line-height:1.8;">
+      <strong>BUBBLE</strong> = BBC News RSS<br>
+      &nbsp;&nbsp;&nbsp;+ OpenAI auto-summary<br>
+      &nbsp;&nbsp;&nbsp;+ EN / DE / ZH language switch<br>
+      &nbsp;&nbsp;&nbsp;+ React beautiful UI<br>
+      &nbsp;&nbsp;&nbsp;+ Auto-refresh every 5 min
+    </div>
+    <div style="margin-top:16px; text-align:center;">
+      <span class="tag tag-blue">React</span>
+      <span class="tag tag-purple">OpenAI</span>
+      <span class="tag tag-orange">Express</span>
+      <span class="tag tag-red">BBC RSS</span>
+      <span class="tag tag-green">3 languages</span>
+      <span class="tag tag-yellow">Cache</span>
+    </div>
+    <p style="text-align:center; margin-top:16px; font-size:0.85rem; color:#666;">
+      Made with ❤️ by Yinchao Chen<br>Berlin, Germany
+    </p>
+  </div>
+
+</div>
+
+<!-- 页脚 -->
+<div class="footer">
+  BUBBLE — AI POWERED NEWS &nbsp;|&nbsp; COMIC EDITION &nbsp;|&nbsp; 2025
+</div>
+
+</body>
+</html>

@@ -41,7 +41,8 @@ type Translations = {
     noNews: string;
     retry: string;
     lastUpdated: string;
-    downloadDocs: string; // 新增翻译
+    downloadDocs: string;
+    comicGuide: string;
   };
 };
 
@@ -57,6 +58,7 @@ const translations: Translations = {
     retry: 'Retry',
     lastUpdated: 'Last updated',
     downloadDocs: 'Download Documentation', // 新增
+    comicGuide: 'How it works',
   },
   de: {
     title: 'Bubble',
@@ -68,7 +70,8 @@ const translations: Translations = {
     noNews: 'Derzeit sind keine Nachrichten verfügbar',
     retry: 'Wiederholen',
     lastUpdated: 'Zuletzt aktualisiert',
-    downloadDocs: 'Dokumentation herunterladen', // 新增
+    downloadDocs: 'Dokumentation herunterladen',
+    comicGuide: 'Wie es funktioniert',
   },
   zh: {
     title: '茧房',
@@ -80,7 +83,8 @@ const translations: Translations = {
     noNews: '暂无新闻',
     retry: '重试',
     lastUpdated: '最后更新',
-    downloadDocs: '下载文档', // 新增
+    downloadDocs: '下载文档',
+    comicGuide: '漫画说明',
   },
 };
 
@@ -344,6 +348,21 @@ const App: React.FC = () => {
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
               <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
               <PdfDownloadButton language={language} />
+              <Tooltip title={t.comicGuide} arrow>
+                <IconButton
+                  onClick={() => window.open('/comic.html', '_blank')}
+                  sx={{
+                    color: 'primary.main',
+                    border: 1,
+                    borderColor: 'primary.main',
+                    borderRadius: 1,
+                    '&:hover': { bgcolor: 'primary.light', color: 'white' },
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>🫧</span>
+                </IconButton>
+              </Tooltip>
             </Box>
             <Typography 
               variant="h4" 
@@ -454,7 +473,6 @@ const App: React.FC = () => {
           Bubble - Powered by News API & OpenAI<br />
           E-Mail: lisumchen@gmail.com<br />
           INSTAGRAM: lisumwinrain<br />
-          Tel: +49 15252827691
          </Typography>
         </Container>
       </Box>
