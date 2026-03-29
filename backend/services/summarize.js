@@ -6,13 +6,21 @@ const client = new OpenAI({
   project: process.env.OPENAI_PROJECT_ID,
 });
 
-// Language code mapping for Google Translate
-const LANG_MAP = { en: 'en', de: 'de', zh: 'zh-CN' };
+// Language code mapping for MyMemory API
+const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
 
-async function translateWithGoogle(text, targetLang) {
-  const translate = require('google-translate-api-x');
-  const result = await translate(text, { to: targetLang });
-  return result.text;
+// Uses MyMemory free translation API — works reliably from cloud servers
+// unlike google-translate-api-x which gets blocked by Google on cloud IPs
+async function translateText(text, targetLang) {
+  const axios = require('axios');
+  const response = await axios.get('https://api.mymemory.translated.net/get', {
+    params: { q: text, langpair: `en|${targetLang}` },
+    timeout: 8000,
+  });
+  if (response.data.responseStatus !== 200) {
+    throw new Error(`MyMemory API error: ${response.data.responseStatus}`);
+  }
+  return response.data.responseData.translatedText;
 }
 
 async function callOpenAI(messages, maxTokens = 200) {
@@ -66,8 +74,8 @@ module.exports = async function summarize(articles, lang) {
         console.log(`🌐 Falling back to Google Translate [${targetLang}]…`);
 
         if (lang !== 'en') {
-          translatedTitle = await translateWithGoogle(article.title, targetLang);
-          summary = await translateWithGoogle(rawContent, targetLang);
+          translatedTitle = await translateText(article.title, targetLang);
+          summary = await translateText(rawContent, targetLang);
         }
 
         translationMethod = 'GoogleTranslate';
