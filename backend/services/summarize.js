@@ -10,15 +10,17 @@ const client = new OpenAI({
 const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
 
 // Uses MyMemory free translation API — works reliably from cloud servers
-// unlike google-translate-api-x which gets blocked by Google on cloud IPs
+// unlike google-translate-api-x which gets blocked by Google on cloud IPs.
+// MyMemory free tier limit: 500 chars per request — truncate before sending.
 async function translateText(text, targetLang) {
   const axios = require('axios');
+  const truncated = text.length > 480 ? text.slice(0, 480) + '…' : text;
   const response = await axios.get('https://api.mymemory.translated.net/get', {
-    params: { q: text, langpair: `en|${targetLang}` },
+    params: { q: truncated, langpair: `en|${targetLang}` },
     timeout: 8000,
   });
   if (response.data.responseStatus !== 200) {
-    throw new Error(`MyMemory API error: ${response.data.responseStatus}`);
+    throw new Error(`MyMemory API error: ${response.data.responseStatus} — ${response.data.responseDetails}`);
   }
   return response.data.responseData.translatedText;
 }
