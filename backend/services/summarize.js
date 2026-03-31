@@ -4,11 +4,8 @@ require('dotenv').config();
 const MODEL = 'llama-3.3-70b-versatile';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// Language code mapping for MyMemory API
 const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
 
-// MyMemory free translation API — fallback only
-// Free tier limit: 500 chars per request — truncate before sending.
 async function translateText(text, targetLang) {
   const truncated = text.length > 480 ? text.slice(0, 480) + '…' : text;
   const response = await axios.get('https://api.mymemory.translated.net/get', {
@@ -16,12 +13,12 @@ async function translateText(text, targetLang) {
     timeout: 8000,
   });
   if (response.data.responseStatus !== 200) {
-    throw new Error(`MyMemory API error: ${response.data.responseStatus} — ${response.data.responseDetails}`);
+    throw new Error(`MyMemory error: ${response.data.responseStatus}`);
   }
   return response.data.responseData.translatedText;
 }
 
-async function callGroq(messages, maxTokens = 200) {
+async function callGroq(messages, maxTokens = 350) {
   const response = await axios.post(
     GROQ_URL,
     { model: MODEL, messages, max_tokens: maxTokens, temperature: 0.7 },
@@ -42,50 +39,60 @@ module.exports = async function summarize(articles, lang) {
   const results = [];
 
   for (const article of articles) {
-    const rawContent = article.content || article.description || 'No content available.';
-    let summary = rawContent;
+    const rawContent = (article.content || article.description || '').slice(0, 800);
+    let summary = rawContent || 'No content available.';
     let translatedTitle = article.title;
     let translationMethod = 'fallback';
 
-    // ── Attempt 1: Groq (Llama 3.3 70B) ─────────────────────────────
+    // ── Attempt 1: Groq — ONE call per article (summary + title together) ──
     try {
-      console.log(`🤖 Groq: summarising in ${lang}…`);
+      console.log(`🤖 Groq [${lang}]: ${article.title.slice(0, 50)}…`);
 
-      summary = await callGroq([
-        { role: 'system', content: `You are a news summariser. Respond only in ${langName}.` },
-        { role: 'user', content: `Summarise this news article in ${langName} in 2–3 sentences:\n\nTitle: ${article.title}\n\n${rawContent}` },
-      ]);
+      if (lang === 'en') {
+        // English: summarise only — no translation needed
+        summary = await callGroq([
+          { role: 'system', content: 'You are a concise news summariser. Respond only in English.' },
+          { role: 'user', content: `Summarise in 2–3 sentences:\n\nTitle: ${article.title}\n\n${rawContent}` },
+        ]);
+      } else {
+        // Non-English: ONE call that returns both translated title and summary.
+        // Using a plain-text format to avoid JSON parsing issues.
+        const raw = await callGroq([
+          {
+            role: 'system',
+            content: `You are a news summariser and translator. Always respond in ${langName} only. Never switch to English.`,
+          },
+          {
+            role: 'user',
+            content: `Translate the headline and summarise the article in ${langName}.\n\nRespond in EXACTLY this format (two lines, nothing else):\nTITLE: <translated headline>\nSUMMARY: <2–3 sentence summary>\n\nHeadline: ${article.title}\nContent: ${rawContent}`,
+          },
+        ]);
 
-      if (lang !== 'en') {
-        translatedTitle = await callGroq([
-          { role: 'user', content: `Translate this headline to ${langName}. Reply with the translation only:\n${article.title}` },
-        ], 80);
+        const titleMatch = raw.match(/^TITLE:\s*(.+)$/m);
+        const summaryMatch = raw.match(/^SUMMARY:\s*([\s\S]+)$/m);
+        translatedTitle = titleMatch ? titleMatch[1].trim() : article.title;
+        summary = summaryMatch ? summaryMatch[1].trim() : raw;
       }
 
       translationMethod = 'Groq';
-      console.log(`✅ Groq succeeded [${lang}]`);
+      console.log(`✅ Groq [${lang}] done`);
 
-    // ── Attempt 2: MyMemory translation ──────────────────────────────
+    // ── Attempt 2: MyMemory (title + content translation, no AI summary) ──
     } catch (groqErr) {
-      console.warn(`⚠️  Groq failed [${lang}]: ${groqErr.message}`);
+      console.warn(`⚠️  Groq [${lang}] failed: ${groqErr.message}`);
 
       try {
-        console.log(`🌐 Falling back to MyMemory [${targetLang}]…`);
-
         if (lang !== 'en') {
           translatedTitle = await translateText(article.title, targetLang);
-          summary = await translateText(rawContent, targetLang);
+          summary        = await translateText(rawContent,     targetLang);
         }
-
         translationMethod = 'MyMemory';
-        console.log(`✅ MyMemory succeeded [${lang}]`);
+        console.log(`✅ MyMemory [${lang}] done`);
 
-      // ── Attempt 3: plain English fallback ────────────────────────
-      } catch (memoryErr) {
-        console.error(`❌ MyMemory also failed [${lang}]: ${memoryErr.message}`);
-        translatedTitle = article.title;
-        summary = rawContent;
-        translationMethod = 'fallback';
+      // ── Attempt 3: keep original English ────────────────────────────
+      } catch (memErr) {
+        console.error(`❌ All translation failed [${lang}]: ${memErr.message}`);
+        // translatedTitle and summary keep their initial English values
       }
     }
 
@@ -99,10 +106,11 @@ module.exports = async function summarize(articles, lang) {
       translationMethod,
     });
 
-    console.log(`📰 Done: ${translatedTitle.slice(0, 60)}…`);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Groq is faster, 500ms is enough
+    console.log(`📰 [${lang}] ${translatedTitle.slice(0, 60)}`);
+    // 1 call per article now; 1000 ms keeps us well under Groq's 30 RPM free limit
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
-  console.log(`🎉 Processed ${results.length} articles [${lang}]`);
+  console.log(`🎉 [${lang}] ${results.length} articles processed`);
   return results;
 };

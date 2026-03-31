@@ -27,7 +27,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-console.log('✅ ENV:', process.env.OPENAI_API_KEY ? '✅ API Key Loaded' : '❌ No API Key');
+console.log('🔑 GROQ_API_KEY:', process.env.GROQ_API_KEY ? '✅ Loaded' : '❌ MISSING — translations will fall back to English');
 
 let cachedNews = {};
 let lastUpdated = null;
