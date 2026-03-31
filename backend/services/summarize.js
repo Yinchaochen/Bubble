@@ -1,19 +1,15 @@
-const OpenAI = require('openai');
+const axios = require('axios');
 require('dotenv').config();
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'no-key',
-  project: process.env.OPENAI_PROJECT_ID,
-});
+const MODEL = 'llama-3.3-70b-versatile';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Language code mapping for MyMemory API
 const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
 
-// Uses MyMemory free translation API — works reliably from cloud servers
-// unlike google-translate-api-x which gets blocked by Google on cloud IPs.
-// MyMemory free tier limit: 500 chars per request — truncate before sending.
+// MyMemory free translation API — fallback only
+// Free tier limit: 500 chars per request — truncate before sending.
 async function translateText(text, targetLang) {
-  const axios = require('axios');
   const truncated = text.length > 480 ? text.slice(0, 480) + '…' : text;
   const response = await axios.get('https://api.mymemory.translated.net/get', {
     params: { q: truncated, langpair: `en|${targetLang}` },
@@ -25,14 +21,19 @@ async function translateText(text, targetLang) {
   return response.data.responseData.translatedText;
 }
 
-async function callOpenAI(messages, maxTokens = 200) {
-  const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages,
-    max_tokens: maxTokens,
-    temperature: 0.7,
-  });
-  return response.choices[0].message.content.trim();
+async function callGroq(messages, maxTokens = 200) {
+  const response = await axios.post(
+    GROQ_URL,
+    { model: MODEL, messages, max_tokens: maxTokens, temperature: 0.7 },
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000,
+    }
+  );
+  return response.data.choices[0].message.content.trim();
 }
 
 module.exports = async function summarize(articles, lang) {
@@ -46,43 +47,42 @@ module.exports = async function summarize(articles, lang) {
     let translatedTitle = article.title;
     let translationMethod = 'fallback';
 
-    // ── Attempt 1: OpenAI ─────────────────────────────────────────
+    // ── Attempt 1: Groq (Llama 3.3 70B) ─────────────────────────────
     try {
-      console.log(`🤖 OpenAI: summarising in ${lang}…`);
+      console.log(`🤖 Groq: summarising in ${lang}…`);
 
-      summary = await callOpenAI([
+      summary = await callGroq([
         { role: 'system', content: `You are a news summariser. Respond only in ${langName}.` },
         { role: 'user', content: `Summarise this news article in ${langName} in 2–3 sentences:\n\nTitle: ${article.title}\n\n${rawContent}` },
       ]);
 
       if (lang !== 'en') {
-        translatedTitle = await callOpenAI([
+        translatedTitle = await callGroq([
           { role: 'user', content: `Translate this headline to ${langName}. Reply with the translation only:\n${article.title}` },
         ], 80);
       }
 
-      translationMethod = 'OpenAI';
-      console.log(`✅ OpenAI succeeded [${lang}]`);
+      translationMethod = 'Groq';
+      console.log(`✅ Groq succeeded [${lang}]`);
 
-    // ── Attempt 2: Google Translate ───────────────────────────────
-    } catch (openaiErr) {
-      console.warn(`⚠️  OpenAI failed [${lang}]: ${openaiErr.message}`);
+    // ── Attempt 2: MyMemory translation ──────────────────────────────
+    } catch (groqErr) {
+      console.warn(`⚠️  Groq failed [${lang}]: ${groqErr.message}`);
 
       try {
-        console.log(`🌐 Falling back to Google Translate [${targetLang}]…`);
+        console.log(`🌐 Falling back to MyMemory [${targetLang}]…`);
 
         if (lang !== 'en') {
           translatedTitle = await translateText(article.title, targetLang);
           summary = await translateText(rawContent, targetLang);
         }
 
-        translationMethod = 'GoogleTranslate';
-        console.log(`✅ Google Translate succeeded [${lang}]`);
+        translationMethod = 'MyMemory';
+        console.log(`✅ MyMemory succeeded [${lang}]`);
 
       // ── Attempt 3: plain English fallback ────────────────────────
-      } catch (googleErr) {
-        console.error(`❌ Google Translate also failed [${lang}]: ${googleErr.message}`);
-        // Return original English content with a note
+      } catch (memoryErr) {
+        console.error(`❌ MyMemory also failed [${lang}]: ${memoryErr.message}`);
         translatedTitle = article.title;
         summary = rawContent;
         translationMethod = 'fallback';
@@ -100,7 +100,7 @@ module.exports = async function summarize(articles, lang) {
     });
 
     console.log(`📰 Done: ${translatedTitle.slice(0, 60)}…`);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500)); // Groq is faster, 500ms is enough
   }
 
   console.log(`🎉 Processed ${results.length} articles [${lang}]`);

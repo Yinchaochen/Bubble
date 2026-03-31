@@ -21,11 +21,19 @@
       --shadow: 6px 6px 0 var(--ink);
     }
 
-    @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+    @font-face {
+      font-family: 'I.Ngaan';
+      src: url('fonts/I.Ngaan.woff2') format('woff2'),
+           url('fonts/I.Ngaan.ttf')   format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
 
     body {
       background: var(--white);
-      font-family: 'Comic Neue', 'Arial Rounded MT Bold', cursive;
+      font-family: 'I.Ngaan', 'Comic Neue', 'Arial Rounded MT Bold', cursive;
       color: var(--ink);
       overflow-x: hidden;
     }
@@ -570,11 +578,11 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-top:14px;">
       <div class="info-card" style="background:#fffbe6;">
         <div class="info-card-title">🌍 Fetch Global News</div>
-        <p style="font-size:0.9rem;">Pulls the latest world headlines from <strong>BBC News</strong> in real time, auto-refreshing every 5 minutes.</p>
+        <p style="font-size:0.9rem;">Pulls the latest world headlines from <strong>BBC News, Der Spiegel &amp; The New York Times</strong> in real time, auto-refreshing every 5 minutes.</p>
       </div>
       <div class="info-card" style="background:#e0faf8;">
         <div class="info-card-title">🤖 AI Smart Summary</div>
-        <p style="font-size:0.9rem;">Uses <strong>ChatGPT (GPT-3.5)</strong> to condense long articles into a concise, readable summary.</p>
+        <p style="font-size:0.9rem;">Uses <strong>Groq (Llama 3.3 70B)</strong> to condense long articles into a concise, readable summary.</p>
       </div>
       <div class="info-card" style="background:#f0efff;">
         <div class="info-card-title">🗣️ Three-Language Switch</div>
@@ -597,7 +605,7 @@
     <h2 style="color:var(--yellow); text-align:center; margin-bottom:16px;">🗺️ Data Journey Map</h2>
     <div class="flow-map">
       <div class="flow-node" style="background:var(--red);color:#fff;">
-        📡<br>BBC<br>RSS
+        📡<br>BBC/Spiegel<br>/NYT RSS
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-node" style="background:var(--orange);color:#fff;">
@@ -605,7 +613,7 @@
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-node" style="background:var(--purple);color:#fff;">
-        🤖<br>OpenAI<br>GPT
+        🤖<br>Groq<br>Llama
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-node" style="background:var(--green);color:var(--ink);">
@@ -632,11 +640,11 @@
   <div class="panel panel-red">
     <span class="panel-num">①</span>
     <span class="sfx" style="font-size:2rem;">STEP 1</span>
-    <h3>📡 Fetch BBC RSS</h3>
+    <h3>📡 Fetch News RSS</h3>
     <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">📰</span>
     <div class="step">
       <div class="step-num">1</div>
-      <div class="step-text">The backend automatically visits the BBC News RSS feed every <span class="hl-red">5 minutes</span></div>
+      <div class="step-text">The backend automatically visits <strong>3 news source</strong> RSS feeds every <span class="hl-red">5 minutes</span></div>
     </div>
     <div class="step">
       <div class="step-num">2</div>
@@ -644,12 +652,12 @@
     </div>
     <div class="step">
       <div class="step-num">3</div>
-      <div class="step-text">Extracts the latest <span class="hl-red">5</span> articles</div>
+      <div class="step-text">Extracts <span class="hl-red">2</span> articles from each source — <strong>6 total</strong></div>
     </div>
     <div class="code-box" style="margin-top:12px; font-size:0.75rem;">
-      <span class="kw">const</span> rssUrl = <span class="str">'https://feeds.bbci.co.uk/news/world/rss.xml'</span>;<br>
-      <span class="kw">const</span> items = result.rss.channel.item;<br>
-      <span class="kw">return</span> items.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">5</span>); <span class="cm">// only take first 5</span>
+      BBC, Der Spiegel, New York Times<br>
+      <span class="cm">// 2 articles each, fetched in parallel</span><br>
+      <span class="kw">const</span> articles = items.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">2</span>);
     </div>
   </div>
 
@@ -657,13 +665,13 @@
   <div class="panel panel-purple">
     <span class="panel-num">②</span>
     <span class="sfx sfx-purple" style="font-size:2rem;">STEP 2</span>
-    <h3>🤖 OpenAI Summary + Translation</h3>
+    <h3>🤖 Groq AI Summary + Translation</h3>
     <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">🧠</span>
     <div class="dialogue">
       <span class="dialogue-char">🧑‍💻</span>
       <div class="dialogue-text">
         <div class="bubble bubble-left" style="font-size:0.82rem;">
-          GPT, please summarize<br>this article in Chinese!
+          Groq, please summarize<br>this article in Chinese!
         </div>
       </div>
     </div>
@@ -677,7 +685,7 @@
       </div>
     </div>
     <div class="code-box" style="margin-top:10px; font-size:0.75rem;">
-      model: <span class="str">'gpt-3.5-turbo'</span>,<br>
+      model: <span class="str">'llama-3.3-70b-versatile'</span>,<br>
       messages: [<br>
       &nbsp;{ role: <span class="str">'system'</span>, content: <span class="str">'You are a news summary assistant'</span> },<br>
       &nbsp;{ role: <span class="str">'user'</span>, content: prompt }<br>
@@ -744,7 +752,7 @@
     <span class="char">🤖</span>
     <span class="sfx" style="font-size:2rem; color:var(--red);">CRASH!</span>
     <div class="bubble bubble-left" style="background:#ffe0e0;">
-      OpenAI timed out…<br>
+      Groq timed out…<br>
       What do we do now?! 😱
     </div>
   </div>
@@ -755,10 +763,10 @@
     <h3 style="color:var(--blue);">Fallback A</h3>
     <span class="char-sm" style="display:block; text-align:center; margin:8px 0;">🌐</span>
     <div class="bubble bubble-blue">
-      <strong>Google Translate</strong> steps in!<br>
+      <strong>MyMemory Translate</strong> steps in!<br>
       Switching automatically
     </div>
-    <p style="font-size:0.85rem; margin-top:12px;">OpenAI fails → automatically switches to <span class="hl-blue">Google Translate API</span> for title and content</p>
+    <p style="font-size:0.85rem; margin-top:12px;">Groq fails → automatically switches to <span class="hl-blue">MyMemory API</span> for title and content</p>
   </div>
 
   <!-- Fallback B -->
@@ -781,15 +789,15 @@
     <h2 style="text-align:center;">🛡️ Triple Fallback Safety Net</h2>
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px;">
       <div class="flow-node" style="background:var(--purple);color:#fff;">
-        🤖 OpenAI<br><small>Primary</small>
+        🤖 Groq<br><small>Primary</small>
       </div>
       <div class="flow-arrow">→ fail →</div>
       <div class="flow-node" style="background:var(--blue);color:var(--ink);">
-        🌐 Google<br><small>Backup</small>
+        🌐 MyMemory<br><small>Backup</small>
       </div>
       <div class="flow-arrow">→ fail →</div>
       <div class="flow-node" style="background:var(--orange);color:#fff;">
-        🏷️ Tag<br><small>Last resort</small>
+        🏷️ English<br><small>Last resort</small>
       </div>
     </div>
     <div class="callout callout-tip" style="margin-top:16px; text-align:center;">
@@ -938,11 +946,11 @@
     <p style="font-size:0.8rem; color:#888; margin-bottom:10px;">AI core &amp; hosting</p>
     <div class="step">
       <div class="step-num" style="background:var(--purple);">AI</div>
-      <div class="step-text"><strong>OpenAI GPT-3.5</strong><br>Summary + translation</div>
+      <div class="step-text"><strong>Groq Llama 3.3 70B</strong><br>Summary + translation</div>
     </div>
     <div class="step">
-      <div class="step-num" style="background:var(--purple);">G</div>
-      <div class="step-text"><strong>Google Translate</strong><br>Backup translation</div>
+      <div class="step-num" style="background:var(--purple);">M</div>
+      <div class="step-text"><strong>MyMemory API</strong><br>Backup translation</div>
     </div>
     <div class="step">
       <div class="step-num" style="background:var(--purple);">V</div>
@@ -1004,7 +1012,7 @@
     </div>
     <div class="step">
       <div class="step-num" style="background:var(--green); color:var(--ink);">⏱</div>
-      <div class="step-text"><strong>1s delay</strong>: Added between AI calls to avoid triggering OpenAI rate limits</div>
+      <div class="step-text"><strong>0.5s delay</strong>: Added between AI calls — Groq is fast enough that 500 ms suffices</div>
     </div>
   </div>
 
@@ -1062,7 +1070,7 @@
         <span class="char-sm" style="display:block;">🔗</span>
         <div class="tag tag-orange" style="margin:6px auto; display:block; width:fit-content;">Step 5</div>
         <p style="font-size:0.85rem; font-weight:700;">Read original</p>
-        <p style="font-size:0.78rem;">Click the button to open the full BBC report</p>
+        <p style="font-size:0.78rem;">Click the button to open the original article from its source</p>
       </div>
 
     </div>
@@ -1158,11 +1166,11 @@
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-node" style="background:#e0faf8;">
-        📡<br>Fetches<br>BBC RSS
+        📡<br>Fetches<br>News RSS
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-node" style="background:#f0efff;">
-        🤖<br>OpenAI<br>summarizes
+        🤖<br>Groq<br>summarizes
       </div>
       <div class="flow-arrow">→</div>
       <div class="flow-node" style="background:#e8fdf5;">
@@ -1247,17 +1255,17 @@
     <span class="panel-num">②</span>
     <h2>📌 In a Nutshell</h2>
     <div class="callout callout-tip" style="margin-top:12px; line-height:1.8;">
-      <strong>BUBBLE</strong> = BBC News RSS<br>
-      &nbsp;&nbsp;&nbsp;+ OpenAI auto-summary<br>
+      <strong>BUBBLE</strong> = BBC / Spiegel / NYT RSS<br>
+      &nbsp;&nbsp;&nbsp;+ Groq AI auto-summary<br>
       &nbsp;&nbsp;&nbsp;+ EN / DE / ZH language switch<br>
       &nbsp;&nbsp;&nbsp;+ React beautiful UI<br>
       &nbsp;&nbsp;&nbsp;+ Auto-refresh every 5 min
     </div>
     <div style="margin-top:16px; text-align:center;">
       <span class="tag tag-blue">React</span>
-      <span class="tag tag-purple">OpenAI</span>
+      <span class="tag tag-purple">Groq</span>
       <span class="tag tag-orange">Express</span>
-      <span class="tag tag-red">BBC RSS</span>
+      <span class="tag tag-red">3 Sources</span>
       <span class="tag tag-green">3 languages</span>
       <span class="tag tag-yellow">Cache</span>
     </div>
