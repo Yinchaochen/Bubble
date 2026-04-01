@@ -461,19 +461,87 @@ const App: React.FC = () => {
         )}
       </Container>
 
-      <Box component="footer" sx={{ 
-        bgcolor: 'background.paper',
-        borderTop: 1,
-        borderColor: 'divider',
+      <Box component="footer" sx={{
+        bgcolor: 'transparent',
         mt: 8,
         py: 3
       }}>
         <Container maxWidth="lg">
-         <Typography variant="body2" color="text.secondary" align="center">
-          Bubble - Powered by News API & OpenAI<br />
-          E-Mail: lisumchen@gmail.com<br />
-          INSTAGRAM: lisumwinrain<br />
-         </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+
+            {/* Instagram */}
+            <Tooltip title="Instagram @lisumwinrain">
+              <Box component="a" href="https://www.instagram.com/lisumwinrain?igsh=aTBrb2g2YTVocnI4" target="_blank" rel="noopener noreferrer" sx={{ display: 'inline-flex', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s ease, box-shadow 0.2s ease', '&:hover': { transform: 'scale(1.15) translateY(-3px)', boxShadow: '0 8px 20px rgba(188,24,136,0.45)' } }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 48 48">
+                  <defs>
+                    <linearGradient id="footerIgGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f09433" />
+                      <stop offset="35%" stopColor="#dc2743" />
+                      <stop offset="100%" stopColor="#bc1888" />
+                    </linearGradient>
+                  </defs>
+                  <rect width="48" height="48" rx="12" fill="url(#footerIgGrad)" />
+                  <rect x="11" y="11" width="26" height="26" rx="7" fill="none" stroke="white" strokeWidth="2.5" />
+                  <circle cx="24" cy="24" r="6.5" fill="none" stroke="white" strokeWidth="2.5" />
+                  <circle cx="32.5" cy="15.5" r="1.8" fill="white" />
+                </svg>
+              </Box>
+            </Tooltip>
+
+            {/* LinkedIn */}
+            <Tooltip title="LinkedIn">
+              <Box component="a" href="https://www.linkedin.com/in/yinchao-chen-848038308?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener noreferrer" sx={{ display: 'inline-flex', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s ease, box-shadow 0.2s ease', '&:hover': { transform: 'scale(1.15) translateY(-3px)', boxShadow: '0 8px 20px rgba(10,102,194,0.5)' } }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 48 48">
+                  <defs>
+                    <linearGradient id="footerLiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#0a66c2" />
+                      <stop offset="100%" stopColor="#0077b5" />
+                    </linearGradient>
+                  </defs>
+                  <rect width="48" height="48" rx="12" fill="url(#footerLiGrad)" />
+                  <circle cx="14" cy="15" r="3" fill="white" />
+                  <rect x="11" y="21" width="6" height="14" fill="white" />
+                  <path d="M 19 21 L 19 35 L 24.5 35 L 24.5 27.5 C 24.5 25 26 23.5 28.5 23.5 C 31 23.5 32 25 32 27.5 L 32 35 L 37 35 L 37 26.5 C 37 22 34.5 20 30.5 20 C 27.5 20 25.5 21.5 24.5 23 L 24.5 21 Z" fill="white" />
+                </svg>
+              </Box>
+            </Tooltip>
+
+            {/* YouTube */}
+            <Tooltip title="YouTube @lisumchen">
+              <Box component="a" href="https://youtube.com/@lisumchen?si=FzzBvHkdueg2Dzm-" target="_blank" rel="noopener noreferrer" sx={{ display: 'inline-flex', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s ease, box-shadow 0.2s ease', '&:hover': { transform: 'scale(1.15) translateY(-3px)', boxShadow: '0 8px 20px rgba(204,0,0,0.5)' } }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 48 48">
+                  <defs>
+                    <linearGradient id="footerYtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ff2020" />
+                      <stop offset="100%" stopColor="#cc0000" />
+                    </linearGradient>
+                  </defs>
+                  <rect width="48" height="48" rx="12" fill="url(#footerYtGrad)" />
+                  <rect x="7" y="14" width="34" height="20" rx="6" fill="none" stroke="white" strokeWidth="2.5" />
+                  <polygon points="19,18 19,30 33,24" fill="white" />
+                </svg>
+              </Box>
+            </Tooltip>
+
+            {/* Medium */}
+            <Tooltip title="Medium @lisumchen">
+              <Box component="a" href="https://medium.com/@lisumchen" target="_blank" rel="noopener noreferrer" sx={{ display: 'inline-flex', borderRadius: '12px', overflow: 'hidden', transition: 'transform 0.2s ease, box-shadow 0.2s ease', '&:hover': { transform: 'scale(1.15) translateY(-3px)', boxShadow: '0 8px 20px rgba(0,0,0,0.4)' } }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 48 48">
+                  <defs>
+                    <linearGradient id="footerMedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#1a1a1a" />
+                      <stop offset="100%" stopColor="#4a4a4a" />
+                    </linearGradient>
+                  </defs>
+                  <rect width="48" height="48" rx="12" fill="url(#footerMedGrad)" />
+                  <line x1="12" y1="35" x2="12" y2="14" stroke="white" strokeWidth="4.5" strokeLinecap="square" />
+                  <line x1="36" y1="35" x2="36" y2="14" stroke="white" strokeWidth="4.5" strokeLinecap="square" />
+                  <polyline points="12,14 24,27 36,14" fill="none" stroke="white" strokeWidth="4.5" strokeLinejoin="round" />
+                </svg>
+              </Box>
+            </Tooltip>
+
+          </Box>
         </Container>
       </Box>
     </Box>

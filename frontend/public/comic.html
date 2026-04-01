@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bubble — Comic Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   <style>
     /* ── 全局 ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -423,6 +425,54 @@
       box-shadow: 3px 3px 0 var(--ink);
     }
 
+    /* ── 探索 CTA ── */
+    .explore-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 22px;
+      text-decoration: none;
+    }
+    .explore-label {
+      font-family: 'Pacifico', cursive;
+      font-size: 1.05rem;
+      color: var(--ink);
+      letter-spacing: 0.5px;
+    }
+    .explore-arrow {
+      font-size: 1.5rem;
+      display: inline-block;
+      animation: ctaArrow 0.7s ease-in-out infinite;
+      color: var(--ink);
+      line-height: 1;
+    }
+    @keyframes ctaArrow {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(8px); }
+    }
+    .explore-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 58px;
+      background: var(--blue);
+      border: 3px solid var(--ink);
+      border-radius: 50%;
+      box-shadow: 4px 4px 0 var(--ink);
+      text-decoration: none;
+      font-size: 1.9rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .explore-btn:hover {
+      transform: translate(-2px, -2px) scale(1.1);
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+    .explore-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
     /* ── 页脚 ── */
     .footer {
       position: relative;
@@ -536,6 +586,11 @@
   <p class="cover-sub">An AI-powered app for world news</p>
   <p class="cover-stars">★★★★★</p>
   <p style="margin-top:16px; font-size:0.9rem; color:#555;">By: Yinchao Chen / Berlin, Germany</p>
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:24px;">
+    <span class="explore-label">click to explore</span>
+    <span class="explore-arrow">→</span>
+    <a href="/" class="explore-btn" title="Open Bubble App">🫧</a>
+  </div>
 </div>
 
 
@@ -1274,6 +1329,13 @@
     </p>
   </div>
 
+</div>
+
+<!-- 底部 CTA -->
+<div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:36px 20px 8px;">
+  <span class="explore-label" style="font-size:1.2rem;">click to explore</span>
+  <span class="explore-arrow">→</span>
+  <a href="/" class="explore-btn" style="width:66px;height:66px;font-size:2.1rem;" title="Open Bubble App">🫧</a>
 </div>
 
 <!-- 页脚 -->
