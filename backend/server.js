@@ -45,9 +45,11 @@ async function updateNews() {
           // Only cache non-English results if at least one article was actually translated.
           // If everything fell back to English (both Groq and MyMemory failed),
           // keep the previous cache so the frontend shows "retry" rather than wrong-language content.
-          const translatedCount = summarized.filter(a => a.translationMethod !== 'fallback').length;
-          const threshold = Math.ceil(summarized.length * 0.5); // at least 50 % must be translated
-        if (translatedCount < threshold) {
+          const translatedCount = summarized.filter(a =>
+            a.translationMethod === 'Groq' || a.translationMethod === 'GoogleTranslate'
+          ).length;
+          const threshold = Math.ceil(summarized.length * 0.5);
+          if (translatedCount < threshold) {
             console.warn(`⚠️  [${lang}] Only ${translatedCount}/${summarized.length} translated — skipping cache update`);
             continue;
           }

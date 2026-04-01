@@ -14,7 +14,7 @@ async function translateText(text, targetLang) {
 }
 
 async function callGroq(messages, maxTokens = 250) {
-  const makeRequest = () => axios.post(
+  const response = await axios.post(
     GROQ_URL,
     { model: MODEL, messages, max_tokens: maxTokens, temperature: 0.7 },
     {
@@ -22,24 +22,10 @@ async function callGroq(messages, maxTokens = 250) {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      timeout: 30000,
+      timeout: 15000,
     }
   );
-
-  try {
-    const response = await makeRequest();
-    return response.data.choices[0].message.content.trim();
-  } catch (err) {
-    // On rate-limit (429), honour the Retry-After header and try once more
-    if (err.response?.status === 429) {
-      const wait = (parseInt(err.response.headers['retry-after'] || '30', 10) + 2) * 1000;
-      console.warn(`⏳ Groq 429 — waiting ${wait / 1000}s then retrying`);
-      await new Promise(r => setTimeout(r, wait));
-      const response = await makeRequest();
-      return response.data.choices[0].message.content.trim();
-    }
-    throw err;
-  }
+  return response.data.choices[0].message.content.trim();
 }
 
 module.exports = async function summarize(articles, lang) {
@@ -86,22 +72,25 @@ module.exports = async function summarize(articles, lang) {
       translationMethod = 'Groq';
       console.log(`✅ Groq [${lang}] done`);
 
-    // ── Attempt 2: MyMemory (title + content translation, no AI summary) ──
+    // ── Attempt 2: Google Translate fallback (non-English only) ─────────
     } catch (groqErr) {
       console.warn(`⚠️  Groq [${lang}] failed: ${groqErr.message}`);
 
-      try {
-        if (lang !== 'en') {
+      if (lang === 'en') {
+        // English: just use raw content — no translation needed, no extra wait
+        translationMethod = 'raw';
+        console.log(`📄 English raw fallback used`);
+      } else {
+        try {
           translatedTitle = await translateText(article.title, targetLang);
           summary        = await translateText(rawContent,     targetLang);
+          translationMethod = 'GoogleTranslate';
+          console.log(`✅ GoogleTranslate [${lang}] done`);
+        // ── Attempt 3: keep original English ──────────────────────────
+        } catch (transErr) {
+          console.error(`❌ All translation failed [${lang}]: ${transErr.message}`);
+          // translatedTitle and summary keep their initial English values
         }
-        translationMethod = 'MyMemory';
-        console.log(`✅ MyMemory [${lang}] done`);
-
-      // ── Attempt 3: keep original English ────────────────────────────
-      } catch (memErr) {
-        console.error(`❌ All translation failed [${lang}]: ${memErr.message}`);
-        // translatedTitle and summary keep their initial English values
       }
     }
 
