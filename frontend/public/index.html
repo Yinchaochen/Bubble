@@ -27,13 +27,6 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Bubble</title>
-    <script>
-      // Redirect first-time visitors to the comic intro page.
-      // sessionStorage resets when the tab is closed, so each new session sees the intro.
-      if (!sessionStorage.getItem('seenIntro')) {
-        window.location.replace('/comic.html');
-      }
-    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
