@@ -40,12 +40,21 @@ async function updateNews() {
     for (const lang of langList) {
       try {
         const summarized = await summarize(rawArticles, lang);
+
+        if (lang !== 'en') {
+          // Only cache non-English results if at least one article was actually translated.
+          // If everything fell back to English (both Groq and MyMemory failed),
+          // keep the previous cache so the frontend shows "retry" rather than wrong-language content.
+          const translatedCount = summarized.filter(a => a.translationMethod !== 'fallback').length;
+          if (translatedCount === 0) {
+            console.warn(`⚠️  [${lang}] All articles fell back to English — skipping cache update`);
+            continue;
+          }
+        }
+
         cachedNews[lang] = summarized;
       } catch (err) {
         console.error(`summarize error [${lang}]:`, err.message);
-        // For non-English languages, do NOT store English raw articles in the cache.
-        // Leaving the cache empty causes the frontend to show a retry prompt,
-        // which is better than showing untranslated English content under a Chinese/German UI.
         if (lang === 'en') {
           cachedNews[lang] = rawArticles.map(article => ({
             ...article,
@@ -77,5 +86,5 @@ app.listen(PORT, () => {
   console.log(`🌍 Check your deployment platform for the actual URL`);
   
   updateNews();
-  setInterval(updateNews, 1000 * 60 * 5);
+  setInterval(updateNews, 1000 * 60 * 30); // 30 min — keeps daily token usage ~120K (well under 500K free limit)
 });
