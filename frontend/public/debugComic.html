@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bubble — Debug Chronicles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1a2e;
+      --yellow: #ffd93d;
+      --red: #ff6b6b;
+      --blue: #4ecdc4;
+      --purple: #a29bfe;
+      --green: #55efc4;
+      --orange: #fd9644;
+      --white: #fffdf7;
+      --panel-border: 4px solid var(--ink);
+      --shadow: 6px 6px 0 var(--ink);
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+    @font-face {
+      font-family: 'I.Ngaan';
+      src: url('fonts/I.Ngaan.woff2') format('woff2'),
+           url('fonts/I.Ngaan.ttf')   format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    body {
+      background: var(--white);
+      font-family: 'I.Ngaan', 'Comic Neue', 'Arial Rounded MT Bold', cursive;
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, #ddd 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      position: relative;
+      background: var(--red);
+      border-bottom: 6px solid var(--ink);
+      padding: 60px 20px 40px;
+      text-align: center;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0; right: 0;
+      height: 18px;
+      background: repeating-linear-gradient(90deg, var(--ink) 0 18px, transparent 18px 36px);
+    }
+    .cover-badge {
+      display: inline-block;
+      background: var(--ink);
+      color: var(--yellow);
+      font-family: 'Bangers', cursive;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      padding: 4px 14px;
+      border: 3px solid var(--yellow);
+      border-radius: 4px;
+      box-shadow: 3px 3px 0 var(--ink);
+      margin-bottom: 16px;
+      transform: rotate(-2deg);
+    }
+    .cover h1 {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(3rem, 11vw, 6.5rem);
+      letter-spacing: 4px;
+      line-height: 1;
+      text-shadow: 5px 5px 0 var(--ink);
+      color: #fff;
+    }
+    .cover h1 span { color: var(--yellow); }
+    .cover-sub {
+      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-weight: 700;
+      margin-top: 10px;
+      color: #fff;
+    }
+    .cover-stars { font-size: 1.8rem; margin-top: 8px; letter-spacing: 4px; }
+
+    /* ── Chapter header ── */
+    .chapter {
+      position: relative;
+      z-index: 1;
+      background: var(--ink);
+      color: var(--yellow);
+      font-family: 'Bangers', cursive;
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      letter-spacing: 3px;
+      padding: 12px 32px;
+      text-align: center;
+      border-top: 4px solid var(--yellow);
+      border-bottom: 4px solid var(--yellow);
+    }
+
+    /* ── Grid ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: grid;
+      gap: 20px;
+    }
+    .grid-2   { grid-template-columns: 1fr 1fr; }
+    .grid-3   { grid-template-columns: 1fr 1fr 1fr; }
+    .grid-3-1 { grid-template-columns: 2fr 1fr; }
+    .grid-1-3 { grid-template-columns: 1fr 2fr; }
+    @media (max-width: 640px) {
+      .grid-2, .grid-3, .grid-3-1, .grid-1-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel ── */
+    .panel {
+      border: var(--panel-border);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      background: #fff;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-num {
+      position: absolute;
+      top: 8px; left: 10px;
+      font-family: 'Bangers', cursive;
+      font-size: 1rem;
+      color: #888;
+    }
+    .panel-yellow  { background: #fffbe6; }
+    .panel-blue    { background: #e0faf8; }
+    .panel-red     { background: #fff0f0; }
+    .panel-purple  { background: #f0efff; }
+    .panel-green   { background: #e8fdf5; }
+    .panel-dark    { background: var(--ink); color: #fff; }
+    .panel-orange  { background: #fff5e6; }
+    .panel-full    { grid-column: 1 / -1; }
+
+    /* ── Bubbles ── */
+    .bubble {
+      position: relative;
+      background: #fff;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      padding: 10px 16px;
+      margin: 10px 4px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      display: inline-block;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .bubble-left::after {
+      content: '';
+      position: absolute;
+      bottom: -14px; left: 18px;
+      border: 8px solid transparent;
+      border-top-color: var(--ink);
+    }
+    .bubble-left::before {
+      content: '';
+      position: absolute;
+      bottom: -10px; left: 20px;
+      border: 6px solid transparent;
+      border-top-color: #fff;
+      z-index: 1;
+    }
+    .bubble-right::after {
+      content: '';
+      position: absolute;
+      bottom: -14px; right: 18px;
+      border: 8px solid transparent;
+      border-top-color: var(--ink);
+    }
+    .bubble-right::before {
+      content: '';
+      position: absolute;
+      bottom: -10px; right: 20px;
+      border: 6px solid transparent;
+      border-top-color: #fff;
+      z-index: 1;
+    }
+    .bubble-think {
+      border-radius: 50px;
+      border-style: dashed;
+    }
+    .bubble-think::after {
+      content: '•••';
+      position: absolute;
+      bottom: -22px; left: 16px;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      color: var(--ink);
+    }
+    .bubble-shout {
+      background: var(--yellow);
+      clip-path: polygon(5% 0%,95% 0%,100% 5%,100% 95%,95% 100%,5% 100%,0% 95%,0% 5%);
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+      font-family: 'Bangers', cursive;
+      letter-spacing: 1px;
+      font-size: 1.1rem;
+    }
+    .bubble-blue   { background: var(--blue);   color: var(--ink); }
+    .bubble-red    { background: var(--red);    color: #fff; }
+    .bubble-purple { background: var(--purple); color: #fff; }
+    .bubble-green  { background: var(--green);  color: var(--ink); }
+
+    /* ── SFX ── */
+    .sfx {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(2rem, 8vw, 4rem);
+      color: var(--red);
+      text-shadow: 3px 3px 0 var(--ink);
+      display: block;
+      line-height: 1;
+      transform: rotate(-5deg);
+      margin: 8px 0;
+    }
+    .sfx-blue   { color: var(--blue); }
+    .sfx-purple { color: var(--purple); }
+    .sfx-green  { color: var(--green); }
+    .sfx-yellow { color: var(--yellow); text-shadow: 3px 3px 0 var(--ink); }
+    .sfx-orange { color: var(--orange); }
+
+    /* ── Characters ── */
+    .char { font-size: clamp(3rem, 10vw, 6rem); display: block; line-height: 1; text-align: center; }
+    .char-sm { font-size: clamp(2rem, 6vw, 3.5rem); }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      margin: 3px;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .tag-yellow { background: var(--yellow); }
+    .tag-blue   { background: var(--blue); }
+    .tag-red    { background: var(--red); color: #fff; }
+    .tag-purple { background: var(--purple); color: #fff; }
+    .tag-green  { background: var(--green); }
+    .tag-orange { background: var(--orange); color: #fff; }
+
+    /* ── Flow map ── */
+    .flow-map {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 0;
+    }
+    .flow-node {
+      border: 3px solid var(--ink);
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      box-shadow: 4px 4px 0 var(--ink);
+      min-width: 80px;
+    }
+    .flow-arrow { font-size: 1.6rem; font-weight: 900; color: var(--ink); }
+
+    /* ── Info card ── */
+    .info-card {
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      padding: 12px 16px;
+      background: #fff;
+      box-shadow: 4px 4px 0 var(--ink);
+      margin: 8px 0;
+    }
+    .info-card-title {
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    /* ── Step ── */
+    .step { display: flex; align-items: flex-start; gap: 12px; margin: 10px 0; }
+    .step-num {
+      min-width: 32px; height: 32px;
+      background: var(--ink); color: #fff;
+      font-family: 'Bangers', cursive; font-size: 1.1rem;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; box-shadow: 2px 2px 0 #888;
+    }
+    .step-text { font-size: 0.95rem; line-height: 1.6; padding-top: 4px; }
+
+    /* ── Highlight ── */
+    .hl-yellow { background: var(--yellow); padding: 1px 4px; border-radius: 3px; }
+    .hl-blue   { background: var(--blue);   padding: 1px 4px; border-radius: 3px; }
+    .hl-red    { background: var(--red);    padding: 1px 4px; border-radius: 3px; color: #fff; }
+    .hl-purple { background: var(--purple); padding: 1px 4px; border-radius: 3px; color: #fff; }
+    .hl-green  { background: var(--green);  padding: 1px 4px; border-radius: 3px; }
+
+    /* ── Code box ── */
+    .code-box {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border: 3px solid var(--ink);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      box-shadow: 4px 4px 0 var(--ink);
+      overflow-x: auto;
+    }
+    .code-box .kw  { color: #cba6f7; }
+    .code-box .str { color: #a6e3a1; }
+    .code-box .fn  { color: #89dceb; }
+    .code-box .cm  { color: #6c7086; }
+    .code-box .num { color: #fab387; }
+    .code-box .err { color: #f38ba8; }
+
+    /* ── Dialogue ── */
+    .dialogue { display: flex; align-items: flex-end; gap: 12px; margin: 10px 0; }
+    .dialogue.right { flex-direction: row-reverse; }
+    .dialogue-char { font-size: 2.5rem; flex-shrink: 0; }
+    .dialogue-text { flex: 1; }
+
+    /* ── Alert box ── */
+    .alert {
+      border: 3px solid var(--ink);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin: 10px 0;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .alert-red    { background: #fff0f0; border-left: 6px solid var(--red); }
+    .alert-green  { background: #e8fdf5; border-left: 6px solid var(--green); }
+    .alert-yellow { background: #fffbe6; border-left: 6px solid var(--yellow); }
+    .alert-blue   { background: #e0faf8; border-left: 6px solid var(--blue); }
+
+    /* ── Back link ── */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Pacifico', cursive;
+      font-size: 1rem;
+      color: var(--ink);
+      text-decoration: none;
+      margin-top: 20px;
+      padding: 8px 18px;
+      border: 3px solid var(--ink);
+      border-radius: 30px;
+      box-shadow: 3px 3px 0 var(--ink);
+      background: var(--yellow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .back-link:hover {
+      transform: translate(-2px,-2px);
+      box-shadow: 5px 5px 0 var(--ink);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      position: relative;
+      z-index: 1;
+      background: var(--ink);
+      color: var(--yellow);
+      text-align: center;
+      padding: 24px;
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      border-top: 6px solid var(--yellow);
+    }
+
+    p { line-height: 1.6; }
+    h2 { font-family: 'Bangers', cursive; font-size: 1.6rem; letter-spacing: 2px; margin-bottom: 10px; }
+    h3 { font-family: 'Bangers', cursive; font-size: 1.2rem; letter-spacing: 1px; margin-bottom: 6px; }
+
+    @keyframes wiggle  { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    @keyframes bounce  { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes pulse-border { 0%,100% { box-shadow: 4px 4px 0 var(--ink); } 50% { box-shadow: 8px 8px 0 var(--ink); } }
+    @keyframes shake   { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+    .anim-wiggle  { animation: wiggle 2s infinite; display: inline-block; }
+    .anim-bounce  { animation: bounce 1.5s infinite; display: inline-block; }
+    .anim-pulse   { animation: pulse-border 2s infinite; }
+    .anim-shake   { animation: shake 0.4s ease infinite; display: inline-block; }
+  </style>
+</head>
+<body>
+
+<!-- ══ COVER ══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-badge">DEBUG CHRONICLES VOL.1</div>
+  <h1>BUG<br><span>HUNT!</span></h1>
+  <p class="cover-sub">The true story of fixing Bubble's translation system</p>
+  <p class="cover-stars" style="color:var(--yellow);">🐛🔍🔧✅🎉</p>
+  <p style="margin-top:16px; font-size:0.9rem; color:rgba(255,255,255,0.8);">By: Yinchao Chen &amp; Claude / Berlin, Germany</p>
+</div>
+
+
+<!-- ══ CHAPTER 1 ══════════════════════════════════════ -->
+<div class="chapter">🐛 Chapter 1 — Everything Looked Fine… Until It Didn't</div>
+
+<div class="page grid-2">
+
+  <!-- The symptom -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">①</span>
+    <span class="char">🧑‍💻</span>
+    <div class="bubble bubble-left" style="margin-top:14px;">
+      I switched to <strong>Deutsch</strong>…<br>
+      why is everything still in English?!
+    </div>
+    <div class="bubble bubble-think" style="margin-top:24px; font-size:0.85rem;">
+      And now… no news at all?
+    </div>
+  </div>
+
+  <!-- API response was empty -->
+  <div class="panel panel-red">
+    <span class="panel-num">②</span>
+    <span class="sfx anim-shake">ERROR!</span>
+    <div class="code-box" style="margin-top:12px; font-size:0.78rem;">
+      <span class="cm">// API response:</span><br>
+      {<br>
+      &nbsp;&nbsp;<span class="str">"success"</span>: <span class="kw">true</span>,<br>
+      &nbsp;&nbsp;<span class="str">"data"</span>: <span class="err">[]</span>,<br>
+      &nbsp;&nbsp;<span class="str">"lastUpdated"</span>: <span class="err">null</span><br>
+      }
+    </div>
+    <div class="alert alert-red" style="margin-top:12px;">
+      ⚠️ <code>lastUpdated: null</code> means <strong>updateNews() never finished!</strong>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ CHAPTER 2 ══════════════════════════════════════ -->
+<div class="chapter">🔬 Chapter 2 — Bug #1: The Token Rate Limit Trap</div>
+
+<div class="page">
+
+  <div class="panel panel-full panel-purple">
+    <span class="panel-num">③</span>
+    <h2 style="text-align:center;">The Math That Broke Everything</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-top:14px;">
+      <div class="info-card" style="background:#fffbe6; text-align:center;">
+        <div class="info-card-title">📰 6 Articles</div>
+        <p style="font-size:0.9rem;">3 from BBC, 2 from Spiegel, 1 from NYT</p>
+      </div>
+      <div class="info-card" style="background:#f0efff; text-align:center;">
+        <div class="info-card-title">🌍 × 3 Languages</div>
+        <p style="font-size:0.9rem;">English · Deutsch · 中文</p>
+      </div>
+      <div class="info-card" style="background:#fff0f0; text-align:center;">
+        <div class="info-card-title">🤖 = 18 Groq Calls</div>
+        <p style="font-size:0.9rem;">All fired within <strong>18 seconds</strong></p>
+      </div>
+    </div>
+    <div class="flow-map" style="margin-top:16px;">
+      <div class="flow-node" style="background:var(--blue);color:var(--ink);">18 calls<br>× 850 tokens</div>
+      <span class="flow-arrow">＝</span>
+      <div class="flow-node" style="background:var(--red);color:#fff;">51,000<br>tokens/min</div>
+      <span class="flow-arrow">vs</span>
+      <div class="flow-node" style="background:var(--green);color:var(--ink);">Groq limit:<br>6,000 TPM</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node" style="background:var(--red);color:#fff;">💥 RATE<br>LIMITED</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="page grid-2">
+
+  <div class="panel panel-red">
+    <span class="panel-num">④</span>
+    <h2>What Happened</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Article 1 → Groq call ✅ translated!</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Article 2 → Groq call ✅ maybe ok…</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Article 3 → <span class="hl-red">429 RATE LIMITED</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Articles 4–6 → All failed silently</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Result: 2/6 translated. Looked like English!</div>
+    </div>
+  </div>
+
+  <div class="panel panel-green">
+    <span class="panel-num">⑤</span>
+    <h2>The Fix</h2>
+    <div class="alert alert-green">
+      ✅ Add a <strong>10-second delay</strong> between each article when using Groq.<br><br>
+      10s gap × 6 articles = <strong>~1,500 tokens/min</strong><br>
+      Well under the 6,000 TPM limit!
+    </div>
+    <div class="code-box" style="margin-top:14px;">
+      <span class="cm">// Only delay when Groq succeeded</span><br>
+      <span class="kw">if</span> (translationMethod === <span class="str">'Groq'</span>) {<br>
+      &nbsp;&nbsp;<span class="kw">await</span> <span class="fn">sleep</span>(<span class="num">10000</span>);<br>
+      }
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ CHAPTER 3 ══════════════════════════════════════ -->
+<div class="chapter">🔬 Chapter 3 — Bug #2: The Fallback That Never Worked</div>
+
+<div class="page grid-2">
+
+  <div class="panel panel-orange">
+    <span class="panel-num">⑥</span>
+    <span class="char">🤦</span>
+    <div class="bubble bubble-left" style="margin-top:14px;">
+      Wait — we had a <strong>MyMemory fallback</strong>!<br>
+      Why didn't it kick in?
+    </div>
+  </div>
+
+  <div class="panel panel-red">
+    <span class="panel-num">⑦</span>
+    <h2>The Hidden Limit</h2>
+    <div class="flow-map">
+      <div class="flow-node" style="background:var(--orange);color:#fff;">MyMemory<br>Free Tier</div>
+      <span class="flow-arrow">＝</span>
+      <div class="flow-node" style="background:var(--yellow);color:var(--ink);">5,000 chars<br>per DAY</div>
+    </div>
+    <div class="alert alert-red" style="margin-top:12px;">
+      One refresh cycle = 6 articles × 2 fields × 480 chars =<br>
+      <strong>~5,760 chars</strong> — already over the limit on the very first run!
+    </div>
+  </div>
+
+  <div class="panel panel-full panel-green">
+    <span class="panel-num">⑧</span>
+    <h2 style="text-align:center;">The Fix: Replace MyMemory with google-translate-api-x</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:14px;">
+      <div class="info-card" style="background:#fff0f0;">
+        <div class="info-card-title">❌ MyMemory (Before)</div>
+        <p style="font-size:0.9rem;">
+          • 5,000 chars/day (anonymous)<br>
+          • Needs account registration<br>
+          • Exhausted on first refresh<br>
+          • Website too broken to sign up!
+        </p>
+      </div>
+      <div class="info-card" style="background:#e8fdf5;">
+        <div class="info-card-title">✅ google-translate-api-x (After)</div>
+        <p style="font-size:0.9rem;">
+          • <strong>No registration needed</strong><br>
+          • No hard daily limit<br>
+          • Already in package.json!<br>
+          • Supports zh-CN, de, and more
+        </p>
+      </div>
+    </div>
+    <div class="code-box" style="margin-top:16px;">
+      <span class="kw">const</span> translate = <span class="fn">require</span>(<span class="str">'google-translate-api-x'</span>);<br><br>
+      <span class="kw">async function</span> <span class="fn">translateText</span>(text, targetLang) {<br>
+      &nbsp;&nbsp;<span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">translate</span>(text, { from: <span class="str">'en'</span>, to: targetLang });<br>
+      &nbsp;&nbsp;<span class="kw">return</span> result.text;<br>
+      }
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ CHAPTER 4 ══════════════════════════════════════ -->
+<div class="chapter">🔬 Chapter 4 — Bug #3: The 300-Second Freeze</div>
+
+<div class="page grid-2">
+
+  <div class="panel panel-dark anim-pulse">
+    <span class="panel-num">⑨</span>
+    <span class="sfx sfx-yellow anim-bounce">FROZEN!</span>
+    <p style="margin-top:12px; font-size:0.9rem; color:#aaa;">The server responded but no news ever appeared. <code style="color:var(--blue);">lastUpdated</code> stayed <code style="color:var(--red);">null</code> forever.</p>
+    <div class="code-box" style="margin-top:12px; font-size:0.78rem;">
+      <span class="cm">// Terminal log:</span><br>
+      <span class="err">⏳ Groq 429 — waiting <strong>298s</strong> then retrying</span><br>
+      <span class="err">⏳ Groq 429 — waiting <strong>298s</strong> then retrying</span><br>
+      <span class="err">⏳ Groq 429 — waiting <strong>298s</strong> then retrying</span><br>
+      <span class="cm">// ... × 6 articles = 30 min freeze!</span>
+    </div>
+  </div>
+
+  <div class="panel panel-yellow">
+    <span class="panel-num">⑩</span>
+    <h2>Root Cause</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Groq returns <span class="hl-red">HTTP 429</span> with header:<br><code>Retry-After: 298</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Old code: <strong>"OK, I'll wait 300 seconds!"</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">6 articles × 300s = <span class="hl-red">30 minute freeze</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text"><code>updateNews()</code> never completes → <code>lastUpdated = null</code> → empty page</div>
+    </div>
+  </div>
+
+  <div class="panel panel-full panel-green">
+    <span class="panel-num">⑪</span>
+    <h2>The Fix: Don't Wait — Fall Through Immediately</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div>
+        <div class="alert alert-red">
+          ❌ <strong>Before:</strong> On 429, wait <code>retry-after</code> seconds (up to 300s!), then retry Groq
+        </div>
+        <div class="code-box" style="margin-top:10px; font-size:0.78rem;">
+          <span class="kw">if</span> (status === <span class="num">429</span>) {<br>
+          &nbsp;&nbsp;<span class="kw">const</span> wait = retryAfter * <span class="num">1000</span>;<br>
+          &nbsp;&nbsp;<span class="cm">// 😱 blocks for 300s!</span><br>
+          &nbsp;&nbsp;<span class="kw">await</span> <span class="fn">sleep</span>(wait);<br>
+          &nbsp;&nbsp;<span class="kw">return</span> <span class="kw">await</span> <span class="fn">retryGroq</span>();<br>
+          }
+        </div>
+      </div>
+      <div>
+        <div class="alert alert-green">
+          ✅ <strong>After:</strong> On 429, throw immediately → fallback catches it → use Google Translate
+        </div>
+        <div class="code-box" style="margin-top:10px; font-size:0.78rem;">
+          <span class="cm">// No retry logic at all.</span><br>
+          <span class="cm">// 429 throws like any error.</span><br>
+          <span class="cm">// Fallback catches it instantly.</span><br>
+          <span class="kw">const</span> r = <span class="kw">await</span> <span class="fn">axios.post</span>(...)<br>
+          <span class="kw">return</span> r.data.choices[<span class="num">0</span>].message.content;
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-blue" style="margin-top:14px;">
+      ⚡ Result: <strong>updateNews() completes in ~5 seconds</strong> even when Groq is fully rate-limited!
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ CHAPTER 5 ══════════════════════════════════════ -->
+<div class="chapter">🔬 Chapter 5 — Bug #4 &amp; #5: The Sequential Queue &amp; Wrong Language Code</div>
+
+<div class="page grid-2">
+
+  <div class="panel panel-blue">
+    <span class="panel-num">⑫</span>
+    <h2>Bug #4: Serial Processing</h2>
+    <p style="font-size:0.9rem; margin-bottom:12px;">The server processed each language one after another:</p>
+    <div class="flow-map" style="flex-direction:column; align-items:flex-start; gap:6px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="flow-node" style="background:var(--blue);">EN starts</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node" style="background:var(--green);">done ~5s ✅</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="flow-node" style="background:var(--yellow);">DE starts after EN</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node" style="background:var(--orange);color:#fff;">done ~65s 😐</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="flow-node" style="background:var(--purple);color:#fff;">ZH starts after DE</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node" style="background:var(--red);color:#fff;">done ~125s 😡</div>
+      </div>
+    </div>
+    <div class="alert alert-yellow" style="margin-top:12px;">
+      German and Chinese users waited <strong>2 minutes longer</strong> than English users!
+    </div>
+  </div>
+
+  <div class="panel panel-purple">
+    <span class="panel-num">⑬</span>
+    <h2>Bug #5: Wrong Language Code</h2>
+    <span class="char-sm anim-wiggle" style="display:block; text-align:center;">🈲</span>
+    <div class="alert alert-red" style="margin-top:12px;">
+      Google Translate rejected <code>'zh'</code>:<br>
+      <em>"language zh unsupported"</em>
+    </div>
+    <p style="font-size:0.9rem; margin-top:10px;">Chinese (Simplified) requires the code <strong><code>zh-CN</code></strong>, not <code>zh</code>.</p>
+    <div class="code-box" style="margin-top:12px;">
+      <span class="cm">// Before:</span><br>
+      <span class="err">zh: <span class="str">'zh'</span></span><br><br>
+      <span class="cm">// After:</span><br>
+      zh: <span class="str">'zh-CN'</span> <span class="cm">// ✅</span>
+    </div>
+  </div>
+
+  <div class="panel panel-full panel-green">
+    <span class="panel-num">⑭</span>
+    <h2 style="text-align:center;">Fix for Both: Parallel Processing + Correct Code</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div>
+        <div class="alert alert-red">❌ Before: <code>for...await</code> (serial)</div>
+        <div class="code-box" style="margin-top:10px; font-size:0.78rem;">
+          <span class="kw">for</span> (<span class="kw">const</span> lang <span class="kw">of</span> [<span class="str">'en'</span>,<span class="str">'de'</span>,<span class="str">'zh'</span>]) {<br>
+          &nbsp;&nbsp;<span class="cm">// waits for en → then de → then zh</span><br>
+          &nbsp;&nbsp;<span class="kw">await</span> <span class="fn">summarize</span>(articles, lang);<br>
+          }
+        </div>
+      </div>
+      <div>
+        <div class="alert alert-green">✅ After: <code>Promise.allSettled()</code> (parallel)</div>
+        <div class="code-box" style="margin-top:10px; font-size:0.78rem;">
+          <span class="kw">await</span> Promise.<span class="fn">allSettled</span>(<br>
+          &nbsp;&nbsp;[<span class="str">'en'</span>,<span class="str">'de'</span>,<span class="str">'zh'</span>].<span class="fn">map</span>(lang =><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">summarize</span>(articles, lang)<br>
+          &nbsp;&nbsp;)<br>
+          );
+        </div>
+      </div>
+    </div>
+    <div class="flow-map" style="margin-top:16px;">
+      <div class="flow-node" style="background:var(--blue);">EN ↗</div>
+      <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+        <div class="flow-node" style="background:var(--yellow);">DE ↗</div>
+        <span style="font-size:0.8rem; font-weight:700;">all start at the same time!</span>
+        <div class="flow-node" style="background:var(--purple);color:#fff;">ZH ↗</div>
+      </div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-node" style="background:var(--green);font-size:1.1rem;">✅ All done<br>~10s</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ CHAPTER 6 ══════════════════════════════════════ -->
+<div class="chapter">🏆 Chapter 6 — After the Fix: The Final Score</div>
+
+<div class="page">
+
+  <div class="panel panel-full panel-dark anim-pulse">
+    <span class="panel-num">⑮</span>
+    <h2 style="text-align:center; color:var(--yellow);">📊 Before vs After</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-top:16px;">
+      <div class="info-card" style="background:#2a1a2e; border-color:var(--red);">
+        <div class="info-card-title" style="color:var(--red);">❌ Before (All Bugs)</div>
+        <p style="font-size:0.85rem; color:#aaa;">
+          • News: empty (lastUpdated: null)<br>
+          • EN appears: never<br>
+          • DE appears: never (125s+ freeze)<br>
+          • ZH: broken (wrong lang code)<br>
+          • Fallback: always fails (5K limit)<br>
+          • Server restart: 30min blackout
+        </p>
+      </div>
+      <div class="info-card" style="background:#1a2e1a; border-color:var(--green);">
+        <div class="info-card-title" style="color:var(--green);">✅ After (All Fixed)</div>
+        <p style="font-size:0.85rem; color:#aaa;">
+          • EN appears in: <strong style="color:var(--green);">~5s</strong><br>
+          • DE appears in: <strong style="color:var(--green);">~10s</strong><br>
+          • ZH appears in: <strong style="color:var(--green);">~10s</strong><br>
+          • Fallback: Google Translate ✅<br>
+          • Server restart: clean cold-start<br>
+          • Rate limit: safely managed
+        </p>
+      </div>
+      <div class="info-card" style="background:#1a1a2e; border-color:var(--blue);">
+        <div class="info-card-title" style="color:var(--blue);">🛠 Changes Made</div>
+        <p style="font-size:0.85rem; color:#aaa;">
+          • 10s delay (Groq only)<br>
+          • MyMemory → google-translate-api-x<br>
+          • Remove 300s retry-after wait<br>
+          • Serial → parallel (allSettled)<br>
+          • <code>'zh'</code> → <code>'zh-CN'</code><br>
+          • 50% translation threshold
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory -->
+  <div class="panel panel-full panel-yellow" style="text-align:center;">
+    <span class="panel-num">⑯</span>
+    <span class="sfx sfx-blue anim-bounce" style="font-size:clamp(2.5rem,10vw,5rem);">FIXED!</span>
+    <span class="char">🎉</span>
+    <div class="bubble" style="display:inline-block; margin-top:16px;">
+      5 bugs found. 5 bugs squashed.<br>
+      <strong>The news flows again!</strong>
+    </div>
+    <br>
+    <div style="margin-top:16px;">
+      <span class="tag tag-red">Bug #1: TPM Limit</span>
+      <span class="tag tag-orange">Bug #2: MyMemory Quota</span>
+      <span class="tag tag-purple">Bug #3: 300s Freeze</span>
+      <span class="tag tag-blue">Bug #4: Serial Queue</span>
+      <span class="tag tag-green">Bug #5: zh-CN Code</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Back link -->
+<div style="display:flex; justify-content:center; padding:32px 20px 8px;">
+  <a href="/comic.html" class="back-link">← Back to Bubble Comic</a>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  BUBBLE DEBUG CHRONICLES &nbsp;|&nbsp; 5 BUGS DEFEATED &nbsp;|&nbsp; 2026
+</div>
+
+</body>
+</html>
