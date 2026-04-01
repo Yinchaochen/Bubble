@@ -116,8 +116,11 @@ module.exports = async function summarize(articles, lang) {
     });
 
     console.log(`📰 [${lang}] ${translatedTitle.slice(0, 60)}`);
-    // 10 s gap → ~6 req/min → ~1500 tokens/min, safely under the 6 000 TPM free limit
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    // English needs no translation API — no delay needed.
+    // de/zh use Groq (6 000 TPM limit) so we wait 10 s between articles.
+    if (lang !== 'en') {
+      await new Promise(resolve => setTimeout(resolve, 10000));
+    }
   }
 
   console.log(`🎉 [${lang}] ${results.length} articles processed`);
