@@ -5,7 +5,7 @@ require('dotenv').config();
 const MODEL = 'llama-3.3-70b-versatile';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
+const LANG_MAP = { en: 'en', de: 'de', zh: 'zh-CN' };
 
 async function translateText(text, targetLang) {
   const truncated = text.length > 480 ? text.slice(0, 480) + '…' : text;
@@ -105,9 +105,8 @@ module.exports = async function summarize(articles, lang) {
     });
 
     console.log(`📰 [${lang}] ${translatedTitle.slice(0, 60)}`);
-    // English needs no translation API — no delay needed.
-    // de/zh use Groq (6 000 TPM limit) so we wait 10 s between articles.
-    if (lang !== 'en') {
+    // Only throttle when Groq actually succeeded — GoogleTranslate/raw need no delay.
+    if (translationMethod === 'Groq') {
       await new Promise(resolve => setTimeout(resolve, 10000));
     }
   }

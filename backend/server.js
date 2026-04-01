@@ -37,25 +37,24 @@ async function updateNews() {
     const rawArticles = await fetchNews();
     const langList = ['en', 'de', 'zh'];
 
-    for (const lang of langList) {
+    // Process all languages in parallel — each language is independent
+    await Promise.allSettled(langList.map(async (lang) => {
       try {
         const summarized = await summarize(rawArticles, lang);
 
         if (lang !== 'en') {
-          // Only cache non-English results if at least one article was actually translated.
-          // If everything fell back to English (both Groq and MyMemory failed),
-          // keep the previous cache so the frontend shows "retry" rather than wrong-language content.
           const translatedCount = summarized.filter(a =>
             a.translationMethod === 'Groq' || a.translationMethod === 'GoogleTranslate'
           ).length;
           const threshold = Math.ceil(summarized.length * 0.5);
           if (translatedCount < threshold) {
             console.warn(`⚠️  [${lang}] Only ${translatedCount}/${summarized.length} translated — skipping cache update`);
-            continue;
+            return;
           }
         }
 
         cachedNews[lang] = summarized;
+        console.log(`✅ [${lang}] cache updated`);
       } catch (err) {
         console.error(`summarize error [${lang}]:`, err.message);
         if (lang === 'en') {
@@ -64,9 +63,8 @@ async function updateNews() {
             summary: article.content?.slice(0, 150) || 'No summary available.',
           }));
         }
-        // de / zh: leave cachedNews[lang] unchanged (empty or previous good data)
       }
-    }
+    }));
 
     lastUpdated = new Date().toISOString();
     console.log('News updated');
