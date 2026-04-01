@@ -1,4 +1,5 @@
 const axios = require('axios');
+const translate = require('google-translate-api-x');
 require('dotenv').config();
 
 const MODEL = 'llama-3.3-70b-versatile';
@@ -8,16 +9,8 @@ const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
 
 async function translateText(text, targetLang) {
   const truncated = text.length > 480 ? text.slice(0, 480) + '…' : text;
-  const params = { q: truncated, langpair: `en|${targetLang}` };
-  if (process.env.MYMEMORY_API_KEY) params.key = process.env.MYMEMORY_API_KEY;
-  const response = await axios.get('https://api.mymemory.translated.net/get', {
-    params,
-    timeout: 8000,
-  });
-  if (response.data.responseStatus !== 200) {
-    throw new Error(`MyMemory error: ${response.data.responseStatus}`);
-  }
-  return response.data.responseData.translatedText;
+  const result = await translate(truncated, { from: 'en', to: targetLang });
+  return result.text;
 }
 
 async function callGroq(messages, maxTokens = 250) {
