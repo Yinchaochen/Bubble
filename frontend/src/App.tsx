@@ -19,6 +19,13 @@ import {
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+// Capture the PWA install prompt as early as possible (fires before React mounts)
+let deferredInstallPrompt: any = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+
 type LanguageCode = 'en' | 'de' | 'zh';
 
 type Article = {
@@ -57,7 +64,7 @@ const translations: Translations = {
     noNews: 'No news available at the moment',
     retry: 'Retry',
     lastUpdated: 'Last updated',
-    downloadDocs: 'Download Documentation', // 新增
+    downloadDocs: 'Install App',
     comicGuide: 'How it works',
   },
   de: {
@@ -70,7 +77,7 @@ const translations: Translations = {
     noNews: 'Derzeit sind keine Nachrichten verfügbar',
     retry: 'Wiederholen',
     lastUpdated: 'Zuletzt aktualisiert',
-    downloadDocs: 'Dokumentation herunterladen',
+    downloadDocs: 'App installieren',
     comicGuide: 'Wie es funktioniert',
   },
   zh: {
@@ -83,7 +90,7 @@ const translations: Translations = {
     noNews: '暂无新闻',
     retry: '重试',
     lastUpdated: '最后更新',
-    downloadDocs: '下载文档',
+    downloadDocs: '安装到手机',
     comicGuide: '漫画说明',
   },
 };
@@ -227,38 +234,73 @@ const LanguageSelector: React.FC<{
   );
 };
 
-// 新增 PDF 下载按钮组件
-const PdfDownloadButton: React.FC<{ language: LanguageCode }> = ({ language }) => {
+const InstallButton: React.FC<{ language: LanguageCode }> = ({ language }) => {
+  const [showHint, setShowHint] = useState(false);
   const t = translations[language];
-  
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = '/downloads/Bubble Entwickler-Protokoll.pdf';
-    link.download = 'Bubble Entwickler-Protokoll.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+  const handleInstall = async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+    } else {
+      setShowHint(true);
+    }
   };
 
+  const hintText = language === 'zh'
+    ? '在 Safari 中：点击底部「分享」→「添加到主屏幕」'
+    : language === 'de'
+    ? 'In Safari: Tippe „Teilen" → „Zum Home-Bildschirm"'
+    : 'In Safari: Tap "Share" → "Add to Home Screen"';
+
+  const dismissText = language === 'zh' ? '点击关闭'
+    : language === 'de' ? 'Tippen zum Schließen' : 'Tap to dismiss';
+
   return (
-    <Tooltip title={t.downloadDocs} arrow>
-      <IconButton
-        onClick={handleDownload}
-        sx={{
-          color: 'primary.main',
-          border: 1,
-          borderColor: 'primary.main',
-          borderRadius: 1,
-          '&:hover': {
-            bgcolor: 'primary.light',
+    <>
+      <Tooltip title={t.downloadDocs} arrow>
+        <IconButton
+          onClick={handleInstall}
+          sx={{
+            color: 'primary.main',
+            border: 1,
+            borderColor: 'primary.main',
+            borderRadius: 1,
+            '&:hover': { bgcolor: 'primary.light', color: 'white' },
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <Download size={20} />
+        </IconButton>
+      </Tooltip>
+      {showHint && (
+        <Box
+          onClick={() => setShowHint(false)}
+          sx={{
+            position: 'fixed',
+            bottom: 80,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bgcolor: 'rgba(0,0,0,0.85)',
             color: 'white',
-          },
-          transition: 'all 0.2s ease'
-        }}
-      >
-        <Download size={20} />
-      </IconButton>
-    </Tooltip>
+            borderRadius: 2,
+            px: 3,
+            py: 2,
+            zIndex: 9999,
+            textAlign: 'center',
+            maxWidth: 300,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+            cursor: 'pointer',
+          }}
+        >
+          <Typography variant="body2" sx={{ lineHeight: 1.6 }}>{hintText}</Typography>
+          <Typography variant="caption" sx={{ opacity: 0.5, mt: 0.5, display: 'block' }}>
+            {dismissText}
+          </Typography>
+        </Box>
+      )}
+    </>
   );
 };
 
@@ -347,7 +389,7 @@ const App: React.FC = () => {
           <Toolbar sx={{ justifyContent: 'space-between' }}>
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
               <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
-              <PdfDownloadButton language={language} />
+              <InstallButton language={language} />
               <Tooltip title={t.comicGuide} arrow>
                 <IconButton
                   onClick={() => window.open('/comic.html', '_blank')}
