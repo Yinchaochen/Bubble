@@ -46,8 +46,9 @@ async function updateNews() {
           // If everything fell back to English (both Groq and MyMemory failed),
           // keep the previous cache so the frontend shows "retry" rather than wrong-language content.
           const translatedCount = summarized.filter(a => a.translationMethod !== 'fallback').length;
-          if (translatedCount === 0) {
-            console.warn(`⚠️  [${lang}] All articles fell back to English — skipping cache update`);
+          const threshold = Math.ceil(summarized.length * 0.5); // at least 50 % must be translated
+        if (translatedCount < threshold) {
+            console.warn(`⚠️  [${lang}] Only ${translatedCount}/${summarized.length} translated — skipping cache update`);
             continue;
           }
         }
@@ -86,5 +87,5 @@ app.listen(PORT, () => {
   console.log(`🌍 Check your deployment platform for the actual URL`);
   
   updateNews();
-  setInterval(updateNews, 1000 * 60 * 30); // 30 min — keeps daily token usage ~120K (well under 500K free limit)
+  setInterval(updateNews, 1000 * 60 * 60); // 60 min — ~300K tokens/day, safely under Groq 500K TPD free limit
 });

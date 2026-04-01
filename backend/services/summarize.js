@@ -18,8 +18,8 @@ async function translateText(text, targetLang) {
   return response.data.responseData.translatedText;
 }
 
-async function callGroq(messages, maxTokens = 350) {
-  const response = await axios.post(
+async function callGroq(messages, maxTokens = 250) {
+  const makeRequest = () => axios.post(
     GROQ_URL,
     { model: MODEL, messages, max_tokens: maxTokens, temperature: 0.7 },
     {
@@ -30,7 +30,21 @@ async function callGroq(messages, maxTokens = 350) {
       timeout: 30000,
     }
   );
-  return response.data.choices[0].message.content.trim();
+
+  try {
+    const response = await makeRequest();
+    return response.data.choices[0].message.content.trim();
+  } catch (err) {
+    // On rate-limit (429), honour the Retry-After header and try once more
+    if (err.response?.status === 429) {
+      const wait = (parseInt(err.response.headers['retry-after'] || '30', 10) + 2) * 1000;
+      console.warn(`⏳ Groq 429 — waiting ${wait / 1000}s then retrying`);
+      await new Promise(r => setTimeout(r, wait));
+      const response = await makeRequest();
+      return response.data.choices[0].message.content.trim();
+    }
+    throw err;
+  }
 }
 
 module.exports = async function summarize(articles, lang) {
@@ -107,8 +121,8 @@ module.exports = async function summarize(articles, lang) {
     });
 
     console.log(`📰 [${lang}] ${translatedTitle.slice(0, 60)}`);
-    // 1 call per article now; 1000 ms keeps us well under Groq's 30 RPM free limit
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 10 s gap → ~6 req/min → ~1500 tokens/min, safely under the 6 000 TPM free limit
+    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
   console.log(`🎉 [${lang}] ${results.length} articles processed`);
