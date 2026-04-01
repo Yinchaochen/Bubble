@@ -372,7 +372,7 @@ const App: React.FC = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      backgroundImage: 'url(/background.jpg)',
+      backgroundImage: 'url(/background.gif)',
       backgroundSize: 'cover',
       backgroundAttachment: 'fixed',
       backgroundPosition: 'center',
