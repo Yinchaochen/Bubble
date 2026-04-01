@@ -8,8 +8,10 @@ const LANG_MAP = { en: 'en', de: 'de', zh: 'zh' };
 
 async function translateText(text, targetLang) {
   const truncated = text.length > 480 ? text.slice(0, 480) + '…' : text;
+  const params = { q: truncated, langpair: `en|${targetLang}` };
+  if (process.env.MYMEMORY_API_KEY) params.key = process.env.MYMEMORY_API_KEY;
   const response = await axios.get('https://api.mymemory.translated.net/get', {
-    params: { q: truncated, langpair: `en|${targetLang}` },
+    params,
     timeout: 8000,
   });
   if (response.data.responseStatus !== 200) {
