@@ -37,8 +37,10 @@ async function updateNews() {
     const rawArticles = await fetchNews();
     const langList = ['en', 'de', 'zh'];
 
-    // Process all languages in parallel — each language is independent
-    await Promise.allSettled(langList.map(async (lang) => {
+    // Process languages sequentially to avoid exceeding Groq's TPM limit.
+    // Parallel processing multiplies token usage by the number of languages,
+    // pushing well past the 6,000 TPM free-tier cap.
+    for (const lang of langList) {
       try {
         const summarized = await summarize(rawArticles, lang);
 
@@ -49,7 +51,7 @@ async function updateNews() {
           const threshold = Math.ceil(summarized.length * 0.5);
           if (translatedCount < threshold) {
             console.warn(`⚠️  [${lang}] Only ${translatedCount}/${summarized.length} translated — skipping cache update`);
-            return;
+            continue;
           }
         }
 
@@ -64,7 +66,7 @@ async function updateNews() {
           }));
         }
       }
-    }));
+    }
 
     lastUpdated = new Date().toISOString();
     console.log('News updated');
