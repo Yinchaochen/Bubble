@@ -839,6 +839,307 @@
 
 </div>
 
+<!-- ══ CHAPTER 7 ══════════════════════════════════════ -->
+<div class="chapter">🌐 Chapter 7 — The Bilingual Glitch: When Chinese Speaks English</div>
+
+<div class="page grid-2">
+
+  <!-- Symptom -->
+  <div class="panel panel-red">
+    <span class="panel-num">⑰</span>
+    <span class="sfx">GLITCH!</span>
+    <div class="dialogue" style="margin-top:12px;">
+      <div class="dialogue-char">😤</div>
+      <div class="dialogue-text">
+        <div class="bubble bubble-left">我选了中文模式，怎么有文章还是英文的？！</div>
+      </div>
+    </div>
+    <div style="margin-top:18px; border:3px solid var(--ink); border-radius:8px; overflow:hidden; box-shadow:4px 4px 0 var(--ink);">
+      <div style="padding:10px 14px; background:#fff; border-bottom:2px solid var(--ink);">
+        <div style="font-weight:700; font-size:0.95rem;">乌克兰士兵放弃战斗：东部战线异常沉寂</div>
+        <div style="font-size:0.75rem; color:#4ecdc4; margin-top:3px;">✅ 翻译成功</div>
+      </div>
+      <div style="padding:10px 14px; background:#fff5f5;">
+        <div style="font-weight:700; font-size:0.95rem;">Epstein Presented Himself to Indian Tycoon as a Trump White House Insider</div>
+        <div style="font-size:0.75rem; color:#ff6b6b; margin-top:3px;">❌ 还是英文！</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Root cause -->
+  <div class="panel panel-purple">
+    <span class="panel-num">⑱</span>
+    <h2>三层降级链的锅</h2>
+    <div class="flow-map" style="flex-direction:column; align-items:flex-start; gap:6px; margin-top:12px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="flow-node tag-blue" style="min-width:130px; text-align:center;">🤖 Groq LLM</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node tag-green" style="font-size:0.8rem;">成功 → 中文 ✅</div>
+      </div>
+      <div style="padding-left:20px; color:#a29bfe; font-weight:700; font-size:1.3rem;">↓ 失败</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="flow-node tag-orange" style="min-width:130px; text-align:center;">🌐 Google Translate</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node tag-green" style="font-size:0.8rem;">成功 → 中文 ✅</div>
+      </div>
+      <div style="padding-left:20px; color:#ff6b6b; font-weight:700; font-size:1.3rem;">↓ 失败</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="flow-node tag-red" style="min-width:130px; text-align:center;">📄 fallback</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-node" style="background:#ff6b6b; color:#fff; font-size:0.8rem;">英文原文混入 ❌</div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:14px;">
+      <strong>问题：</strong>只要两个翻译都失败，这篇文章就用英文原文顶上，悄悄混进中文列表。
+    </div>
+  </div>
+
+</div>
+
+<div class="page grid-3">
+
+  <!-- Method A -->
+  <div class="panel panel-blue">
+    <span class="panel-num">⑲</span>
+    <h2>🔁 方案 A</h2>
+    <h3>Groq 指数退避重试</h3>
+    <p style="font-size:0.88rem; margin:8px 0;">Groq 超限或超时？别急着放弃，先等一等再试！</p>
+    <div class="code-box" style="font-size:0.76rem; margin-top:10px;">
+      <span class="cm">// 最多重试 2 次</span><br>
+      attempt 1: <span class="kw">fail</span> → wait <span class="num">3s</span> → retry<br>
+      attempt 2: <span class="kw">fail</span> → wait <span class="num">6s</span> → retry<br>
+      attempt 3: <span class="kw">fail</span> → <span class="fn">throw</span> ↓ 进入 B
+    </div>
+    <div class="callout callout-tip" style="margin-top:10px; font-size:0.82rem;">
+      等待时间 = <code>3000 × 2^(attempt-1)</code><br>
+      减少"偶发失败"变成"fallback"的概率
+    </div>
+  </div>
+
+  <!-- Method B -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">⑳</span>
+    <h2>♻️ 方案 B</h2>
+    <h3>全批次结束后二次扫描</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">第一轮翻译完成后，收集所有 <code>translationMethod === 'fallback'</code> 的文章</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">等待 <span class="hl-yellow">30 秒</span>，让 Groq TPM 配额恢复</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">只对这几篇文章重新跑一遍翻译（再次走 A 的重试逻辑）</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">成功则替换原条目；仍失败则保持 fallback</div>
+    </div>
+  </div>
+
+  <!-- Method C -->
+  <div class="panel panel-green">
+    <span class="panel-num">㉑</span>
+    <h2>🚫 方案 C</h2>
+    <h3>写入缓存前过滤</h3>
+    <div class="dialogue" style="margin-top:10px;">
+      <div class="dialogue-char" style="font-size:2rem;">🛡️</div>
+      <div class="dialogue-text">
+        <div class="bubble bubble-left" style="font-size:0.85rem;">没翻译完的文章，一条都不许进缓存！</div>
+      </div>
+    </div>
+    <div class="code-box" style="margin-top:12px; font-size:0.76rem;">
+      <span class="kw">const</span> toCache = summarized<br>
+      &nbsp;&nbsp;.<span class="fn">filter</span>(a =><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;a.translationMethod !== <span class="str">'fallback'</span><br>
+      &nbsp;&nbsp;);
+    </div>
+    <p style="font-size:0.82rem; margin-top:10px;">宁可少显示一篇，也不让英文混入中文列表。</p>
+  </div>
+
+</div>
+
+<!-- Combined flow -->
+<div class="page">
+  <div class="panel panel-full panel-dark">
+    <span class="panel-num">㉒</span>
+    <h2 style="color:var(--yellow); text-align:center; margin-bottom:18px;">三层防御联动流程</h2>
+    <div class="flow-map" style="gap:6px;">
+      <div class="flow-node" style="background:var(--blue); color:var(--ink); font-size:0.8rem; text-align:center;">单篇翻译<br>调用 Groq</div>
+      <div class="flow-arrow" style="color:var(--yellow);">→</div>
+      <div class="flow-node" style="background:var(--yellow); color:var(--ink); font-size:0.75rem; text-align:center;">🔁 A<br>最多重试 2 次<br>3s / 6s 退避</div>
+      <div class="flow-arrow" style="color:var(--yellow);">→</div>
+      <div class="flow-node" style="background:var(--orange); color:var(--ink); font-size:0.8rem; text-align:center;">Google<br>Translate</div>
+      <div class="flow-arrow" style="color:var(--yellow);">→</div>
+      <div class="flow-node" style="background:#555; color:#aaa; font-size:0.8rem; text-align:center;">fallback<br>(标记)</div>
+    </div>
+    <div style="text-align:center; color:var(--yellow); font-size:1.4rem; margin:8px 0;">↓ 整批结束后</div>
+    <div class="flow-map" style="gap:6px;">
+      <div class="flow-node" style="background:var(--yellow); color:var(--ink); font-size:0.8rem; text-align:center;">♻️ B<br>收集 fallback<br>等 30s 补译</div>
+      <div class="flow-arrow" style="color:var(--yellow);">→</div>
+      <div class="flow-node" style="background:var(--green); color:var(--ink); font-size:0.8rem; text-align:center;">成功 → 替换<br>失败 → 留标记</div>
+      <div class="flow-arrow" style="color:var(--yellow);">→</div>
+      <div class="flow-node" style="background:var(--purple); color:#fff; font-size:0.8rem; text-align:center;">🚫 C<br>过滤剩余<br>fallback</div>
+      <div class="flow-arrow" style="color:var(--yellow);">→</div>
+      <div class="flow-node" style="background:var(--green); color:var(--ink); font-size:0.8rem; text-align:center;">✅ 纯净<br>中文缓存</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ CHAPTER 8 ══════════════════════════════════════ -->
+<div class="chapter">⚙️ Chapter 8 — The TypeScript Time Bomb & 22 Green Lights</div>
+
+<div class="page grid-2">
+
+  <!-- tsconfig warnings -->
+  <div class="panel panel-red">
+    <span class="panel-num">㉓</span>
+    <span class="sfx sfx-orange" style="font-size:clamp(1.8rem,6vw,3rem);">DEPRECATED!</span>
+    <p style="font-size:0.88rem; margin-top:8px;">VS Code 用 TypeScript 6.x 语言服务分析 <code>tsconfig.json</code>，弹出两条红色警告：</p>
+    <div class="callout" style="margin-top:10px; font-size:0.82rem;">
+      ⛔ <strong>Option 'target=ES5'</strong> is deprecated and will stop functioning in TypeScript 7.0.
+    </div>
+    <div class="callout" style="margin-top:8px; font-size:0.82rem;">
+      ⛔ <strong>Option 'moduleResolution=node10'</strong> is deprecated and will stop functioning in TypeScript 7.0.
+    </div>
+    <div class="bubble bubble-think" style="margin-top:16px; font-size:0.85rem;">
+      为什么项目的 tsc 不报错，VS Code 却报错？
+    </div>
+  </div>
+
+  <!-- tsconfig fix -->
+  <div class="panel panel-green">
+    <span class="panel-num">㉔</span>
+    <h2>双管齐下修复</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+      <div class="info-card" style="background:#fff0f0;">
+        <div class="info-card-title" style="font-size:0.9rem;">❌ 旧配置</div>
+        <div class="code-box" style="font-size:0.75rem; margin-top:6px;">
+          "target": <span class="str">"es5"</span><br>
+          "moduleResolution": <span class="str">"node"</span><br>
+          typescript: <span class="str">"^4.9.5"</span>
+        </div>
+      </div>
+      <div class="info-card" style="background:#e8fdf5;">
+        <div class="info-card-title" style="font-size:0.9rem;">✅ 新配置</div>
+        <div class="code-box" style="font-size:0.75rem; margin-top:6px;">
+          "target": <span class="str">"ES2017"</span><br>
+          "moduleResolution": <span class="str">"bundler"</span><br>
+          typescript: <span class="str">"^5.9.3"</span>
+        </div>
+      </div>
+    </div>
+    <div class="step" style="margin-top:12px;">
+      <div class="step-num">!</div>
+      <div class="step-text" style="font-size:0.82rem;"><code>"bundler"</code> 是 TS 5.0 引入的选项，专为 webpack / CRA 等打包器设计。用旧 TS 4.x 会直接报错，必须升级。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">!</div>
+      <div class="step-text" style="font-size:0.82rem;">VS Code 用自带的 TS 6.x 解析 tsconfig；项目用的是 node_modules 里的 TS。两套版本各自独立。</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="page grid-3">
+
+  <!-- Test panel: what we test -->
+  <div class="panel panel-blue">
+    <span class="panel-num">㉕</span>
+    <h2>🧪 测什么</h2>
+    <div class="step">
+      <div class="step-num">A</div>
+      <div class="step-text" style="font-size:0.82rem;">Groq 第一次成功 → 不重试</div>
+    </div>
+    <div class="step">
+      <div class="step-num">A</div>
+      <div class="step-text" style="font-size:0.82rem;">失败 1/2 次 → 重试后成功</div>
+    </div>
+    <div class="step">
+      <div class="step-num">A</div>
+      <div class="step-text" style="font-size:0.82rem;">3 次全败 → 降级 Google Translate</div>
+    </div>
+    <div class="step">
+      <div class="step-num">A</div>
+      <div class="step-text" style="font-size:0.82rem;">两者全败 → translationMethod = 'fallback'</div>
+    </div>
+    <div class="step">
+      <div class="step-num">B</div>
+      <div class="step-text" style="font-size:0.82rem;">正确识别并匹配需重试的文章</div>
+    </div>
+    <div class="step">
+      <div class="step-num">B</div>
+      <div class="step-text" style="font-size:0.82rem;">重试成功替换 / 失败保持不变</div>
+    </div>
+    <div class="step">
+      <div class="step-num">C</div>
+      <div class="step-text" style="font-size:0.82rem;">50% 阈值判断 / fallback 文章过滤</div>
+    </div>
+  </div>
+
+  <!-- Test panel: how we test -->
+  <div class="panel panel-yellow">
+    <span class="panel-num">㉖</span>
+    <h2>⚡ 怎么测</h2>
+    <p style="font-size:0.85rem; margin-bottom:10px;">真实调 Groq API 太慢，改成 mock：</p>
+    <div class="code-box" style="font-size:0.75rem;">
+      <span class="fn">jest.mock</span>(<span class="str">'axios'</span>);<br>
+      <span class="fn">jest.mock</span>(<span class="str">'google-translate-api-x'</span>);<br><br>
+      <span class="cm">// 让 setTimeout 立即执行</span><br>
+      <span class="fn">jest.spyOn</span>(global, <span class="str">'setTimeout'</span>)<br>
+      &nbsp;&nbsp;.mockImplementation(fn => { <span class="fn">fn</span>(); });<br><br>
+      <span class="cm">// 模拟 Groq 失败两次再成功</span><br>
+      axios.post<br>
+      &nbsp;&nbsp;.<span class="fn">mockRejectedValueOnce</span>(<span class="str">'timeout'</span>)<br>
+      &nbsp;&nbsp;.<span class="fn">mockRejectedValueOnce</span>(<span class="str">'timeout'</span>)<br>
+      &nbsp;&nbsp;.<span class="fn">mockResolvedValueOnce</span>(groqReply);
+    </div>
+    <div class="callout callout-tip" style="margin-top:10px; font-size:0.8rem;">
+      mock 掉 setTimeout → 重试延迟 3s/6s 变成 0s → 测试瞬间跑完
+    </div>
+  </div>
+
+  <!-- Test result -->
+  <div class="panel panel-green" style="text-align:center;">
+    <span class="panel-num">㉗</span>
+    <span class="sfx sfx-green anim-bounce" style="color:var(--ink); font-size:clamp(2rem,7vw,3.5rem);">22 PASSED!</span>
+    <span class="char">🟢</span>
+    <div class="code-box" style="text-align:left; margin-top:12px; font-size:0.78rem;">
+      PASS  ./server.test.js<br>
+      PASS  services/summarize.test.js<br><br>
+      <span style="color:#a6e3a1;">Tests: &nbsp;<strong>22 passed</strong>, 22 total</span><br>
+      <span style="color:#a6e3a1;">Suites: <strong>2 passed</strong>, 2 total</span><br>
+      <span style="color:#6c7086;">Time: &nbsp;&nbsp;0.884 s ⚡</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- New Victory -->
+<div class="page">
+  <div class="panel panel-full panel-yellow" style="text-align:center;">
+    <span class="panel-num">㉘</span>
+    <span class="sfx sfx-blue anim-bounce" style="font-size:clamp(2.5rem,10vw,5rem);">SESSION 2 CLEAR!</span>
+    <span class="char">🏅</span>
+    <div class="bubble" style="display:inline-block; margin-top:16px;">
+      中英混显：消灭。TypeScript 警告：消灭。<br>
+      <strong>22 个测试守护三层防线！</strong>
+    </div>
+    <div style="margin-top:16px; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
+      <span class="tag tag-blue">方案 A：指数退避重试</span>
+      <span class="tag tag-yellow">方案 B：批次二次扫描</span>
+      <span class="tag tag-green">方案 C：fallback 过滤</span>
+      <span class="tag tag-purple">tsconfig ES2017 + bundler</span>
+      <span class="tag tag-red">TypeScript 4.9 → 5.9</span>
+      <span class="tag tag-orange">22 tests ✅</span>
+    </div>
+  </div>
+</div>
+
+
 <!-- Back link -->
 <div style="display:flex; justify-content:center; padding:32px 20px 8px;">
   <a href="/comic.html" class="back-link">← Back to Bubble Comic</a>
@@ -846,7 +1147,7 @@
 
 <!-- Footer -->
 <div class="footer">
-  BUBBLE DEBUG CHRONICLES &nbsp;|&nbsp; 5 BUGS DEFEATED &nbsp;|&nbsp; 2026
+  BUBBLE DEBUG CHRONICLES &nbsp;|&nbsp; 5+3 BUGS DEFEATED &nbsp;|&nbsp; 2026
 </div>
 
 </body>

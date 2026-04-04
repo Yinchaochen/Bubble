@@ -28,6 +28,21 @@ async function callGroq(messages, maxTokens = 250) {
   return response.data.choices[0].message.content.trim();
 }
 
+// Method A: exponential-backoff retry wrapper (2 retries: 3s → 6s)
+async function callGroqWithRetry(messages, maxTokens = 250) {
+  const MAX_RETRIES = 2;
+  for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+    try {
+      return await callGroq(messages, maxTokens);
+    } catch (err) {
+      if (attempt > MAX_RETRIES) throw err;
+      const delay = 3000 * Math.pow(2, attempt - 1); // 3s, 6s
+      console.warn(`⚠️  Groq retry ${attempt}/${MAX_RETRIES} in ${delay / 1000}s: ${err.message}`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
 module.exports = async function summarize(articles, lang) {
   const targetLang = LANG_MAP[lang] || lang;
   const langName = lang === 'zh' ? 'Chinese' : lang === 'de' ? 'German' : 'English';
@@ -45,14 +60,14 @@ module.exports = async function summarize(articles, lang) {
 
       if (lang === 'en') {
         // English: summarise only — no translation needed
-        summary = await callGroq([
+        summary = await callGroqWithRetry([
           { role: 'system', content: 'You are a concise news summariser. Respond only in English.' },
           { role: 'user', content: `Summarise in 2–3 sentences:\n\nTitle: ${article.title}\n\n${rawContent}` },
         ]);
       } else {
         // Non-English: ONE call that returns both translated title and summary.
         // Using a plain-text format to avoid JSON parsing issues.
-        const raw = await callGroq([
+        const raw = await callGroqWithRetry([
           {
             role: 'system',
             content: `You are a news summariser and translator. Always respond in ${langName} only. Never switch to English.`,

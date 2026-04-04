@@ -44,19 +44,37 @@ async function updateNews() {
       try {
         const summarized = await summarize(rawArticles, lang);
 
+        // Method B: retry fallback articles once after a delay
         if (lang !== 'en') {
-          const translatedCount = summarized.filter(a =>
-            a.translationMethod === 'Groq' || a.translationMethod === 'GoogleTranslate'
-          ).length;
-          const threshold = Math.ceil(summarized.length * 0.5);
-          if (translatedCount < threshold) {
-            console.warn(`⚠️  [${lang}] Only ${translatedCount}/${summarized.length} translated — skipping cache update`);
-            continue;
+          const fallbackArticles = summarized.filter(a => a.translationMethod === 'fallback');
+          if (fallbackArticles.length > 0) {
+            console.log(`♻️  [${lang}] ${fallbackArticles.length} fallback article(s) — retrying in 30s...`);
+            await new Promise(r => setTimeout(r, 30000));
+            const failedRaw = rawArticles.filter(raw =>
+              fallbackArticles.some(f => f.originalUrl === raw.originalUrl)
+            );
+            const retried = await summarize(failedRaw, lang);
+            for (const r of retried) {
+              if (r.translationMethod !== 'fallback') {
+                const idx = summarized.findIndex(a => a.originalUrl === r.originalUrl);
+                if (idx !== -1) summarized[idx] = r;
+              }
+            }
           }
         }
 
-        cachedNews[lang] = summarized;
-        console.log(`✅ [${lang}] cache updated`);
+        // Method C: filter out any remaining untranslated articles before caching
+        const toCache = lang === 'en'
+          ? summarized
+          : summarized.filter(a => a.translationMethod !== 'fallback');
+
+        if (lang !== 'en' && toCache.length < Math.ceil(rawArticles.length * 0.5)) {
+          console.warn(`⚠️  [${lang}] Only ${toCache.length}/${rawArticles.length} translated — skipping cache update`);
+          continue;
+        }
+
+        cachedNews[lang] = toCache;
+        console.log(`✅ [${lang}] cache updated (${toCache.length} articles)`);
       } catch (err) {
         console.error(`summarize error [${lang}]:`, err.message);
         if (lang === 'en') {
